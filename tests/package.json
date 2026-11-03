@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "emulators": "cd .. && firebase emulators:start --project demo-dispo-ops",
-    "test": "node --test unit/"
+    "test": "node --test unit/*.test.mjs"
   },
   "devDependencies": {
     "firebase": "11.6.1",
