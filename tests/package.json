@@ -1,0 +1,16 @@
+{
+  "name": "dispo-ops-tests",
+  "private": true,
+  "description": "Dev-only checks for DISPO OPS (emulators, headless browser). Not part of the deployed site.",
+  "type": "module",
+  "scripts": {
+    "emulators": "cd .. && firebase emulators:start --project demo-dispo-ops",
+    "test": "node --test unit/"
+  },
+  "devDependencies": {
+    "firebase": "11.6.1",
+    "firebase-tools": "^14.0.0",
+    "firebase-admin": "^13.6.0",
+    "@firebase/rules-unit-testing": "^4.0.0"
+  }
+}

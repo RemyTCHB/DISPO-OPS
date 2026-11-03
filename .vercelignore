@@ -1,0 +1,8 @@
+# The website is only the page and its assets. Server code, rules and tests are not published.
+functions/
+firebase/
+tests/
+docs/
+firebase.json
+.firebaserc
+README.md
