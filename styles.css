@@ -613,3 +613,16 @@ table.deals tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 400px) {
   .brand .app { display: none; }
 }
+
+/* keep the hub's one-row header on laptop widths */
+.seg.tabs button { padding: 8px 14px; font-size: 13px; }
+@media (max-width: 1500px) { .seg.tabs button .i { display: none; } .seg.theme .lbl { display: none; } }
+@media (max-width: 1100px) and (min-width: 761px) { .brand .app { display: none; } }
+@media (max-width: 760px) {
+  .sop-task .grow { flex: 1 1 100%; }
+  .nav-row .long { display: none; }
+  .nav-row .pick.glass-pick { flex: 1 1 100%; max-width: none !important; order: 5; }
+  .nav-row > .grow { display: none; }
+  .nav-row .btn.primary { order: 6; flex: 1 1 100%; }
+}
+.menu.dp-menu { max-height: min(640px, calc(100vh - 16px)); }
