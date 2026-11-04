@@ -48,7 +48,7 @@ export function init({ onUser, onSignedOut, onDenied }) {
   auth = getAuth(app);
   let cache;
   try { cache = EMU ? memoryLocalCache() : persistentLocalCache({ tabManager: persistentMultipleTabManager() }); } catch (e) { cache = memoryLocalCache(); }
-  db = initializeFirestore(app, { localCache: cache });
+  db = initializeFirestore(app, { localCache: cache, ignoreUndefinedProperties: true });
   if (EMU) {
     connectFirestoreEmulator(db, '127.0.0.1', 8080);
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });

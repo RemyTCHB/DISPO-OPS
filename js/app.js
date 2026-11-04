@@ -36,7 +36,7 @@ function draw() {
   const unread = allDeals().reduce((n, d) => n + unreadFor(d), 0), badge = unread ? `<span class="badge">${unread > 9 ? '9+' : unread}</span>` : '';
   $('chatFab').hidden = S.chat.open; $('chatFab').innerHTML = icon('chat', 24) + (S.chat.open ? '' : badge);
   $('chat').hidden = !S.chat.open;
-  if (S.chat.open) { const body = $('chatMessages'), keep = body && body.scrollHeight - body.scrollTop - body.clientHeight < 40; patch($('chat'), `<div data-key="c" style="display:contents">${chatHtml()}</div>`); scrollChat(keep); }
+  if (S.chat.open) { const body = $('chatMessages'), keep = body && body.scrollHeight - body.scrollTop - body.clientHeight < 40; patch($('chat'), chatHtml()); scrollChat(keep); }
   // bottom bar (phones)
   const bn = (tab, txt, ic, act = 'tab') => `<button type="button" data-act="${act}" data-tab="${tab}" aria-pressed="${act === 'tab' ? S.tab === tab : S.chat.open}">${icon(ic, 20)}${txt}${act === 'chatToggle' && unread && !S.chat.open ? `<span class="badge">${unread > 9 ? '9+' : unread}</span>` : ''}</button>`;
   $('bottomNav').hidden = false;
@@ -44,7 +44,7 @@ function draw() {
   // menu and dialog layers
   const mh = menuHtml();
   $('layer').hidden = !mh;
-  if (mh) { patch($('layer'), `<div class="scrim" data-key="scrim" data-act="closeMenu"></div><div data-key="m-${S.menu.kind}-${S.menu.pop || ''}" style="display:contents">${mh}</div>`); placeMenu($('layer').querySelector('.menu'), S.menu.anchor && S.menu.anchor.isConnected ? S.menu.anchor : findAnchor()); }
+  if (mh) { patch($('layer'), `<div class="scrim" data-key="scrim" data-act="closeMenu"></div><div data-key="m-${S.menu.kind}-${S.menu.pop || ''}-${S.menu.dealId || ''}-${S.menu.tg ? S.menu.tg.tid + (S.menu.tg.sid || '') : ''}" data-morph style="display:contents">${mh}</div>`); placeMenu($('layer').querySelector('.menu'), S.menu.anchor && S.menu.anchor.isConnected ? S.menu.anchor : findAnchor()); }
   const md = modalHtml();
   $('modal').hidden = !md;
   if (md) patch($('modal'), `<div data-key="md-${S.modal.kind}" style="display:contents">${md}</div>`);
@@ -370,7 +370,7 @@ const CHANGE = {
 };
 const INPUT = {
   deployAddress: el => { S.modal.address = el.value; if (S.modal.bad) { S.modal.bad = false; el.classList.remove('bad'); } },
-  confirmWord: el => { const ok = el.value === 'Confirm'; if (ok !== S.modal.ok) { S.modal.ok = ok; render(); } },
+  confirmWord: el => { S.modal.ok = el.value === 'Confirm'; const b = document.querySelector('[data-act="removeSub"]'); if (b) b.disabled = !S.modal.ok; },
   inj: el => { S.modal.state[el.dataset.k] = el.value; },
   chatSearch: el => { S.chat.search = el.value; render(); }
 };

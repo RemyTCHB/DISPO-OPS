@@ -227,7 +227,8 @@ export function findSub(d, target) {
   return { t, s };
 }
 const itemOf = (d, target) => target.sid ? findSub(d, target).s : target.tid ? findTask(d, target) : d;
-const log = (d, x, ev, extra = {}) => { d.log = [...(d.log || []), { at: x.now, by: x.name, ev, ...extra }].slice(-300); };
+const defined = o => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));   // Firestore refuses undefined
+const log = (d, x, ev, extra = {}) => { d.log = [...(d.log || []), defined({ at: x.now, by: x.name, ev, ...extra })].slice(-300); };
 const mark = (o, done, x) => { if (done) { if (!o.startedAt) o.startedAt = x.now; o.doneAt = x.now; } else if (o.doneAt) o.doneAt = null; };
 
 export const edit = {

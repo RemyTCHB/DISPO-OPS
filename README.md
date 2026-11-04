@@ -1,201 +1,104 @@
-<div align="center">
+<p align="center"><img src="assets/logo-full.png" alt="Total Cash Home Buyers" height="64"></p>
 
-<img src="icon.svg" alt="TCHB Dispo Ops" width="120" height="120" />
+<h1 align="center">DISPO OPS</h1>
 
-# TCHB Dispo Ops
+<p align="center"><strong>The dispositions pipeline for Total Cash Home Buyers: every property as a live, weighted SOP checklist.</strong></p>
 
-### Real-time dispositions workflow tracker for the Total Cash Home Buyers team
-
-A secure, collaborative, installable command center that keeps every property in the pipeline moving — with live sync, online presence, weighted SOP progress, and intelligent push notifications.
-
-<br/>
-
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
-![Firestore](https://img.shields.io/badge/Firestore-FF8F00?style=for-the-badge&logo=firebase&logoColor=white)
-![Cloud Functions](https://img.shields.io/badge/Cloud%20Functions-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![JavaScript](https://img.shields.io/badge/Vanilla%20JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![PWA](https://img.shields.io/badge/PWA-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
-
-</div>
+<p align="center">Live at <b>dispo-ops.totalchb.com</b> · Universal Team Hub design · Internal use only</p>
 
 ---
 
-## 📌 Overview
+## What It Does
 
-**TCHB Dispo Ops** is a single-purpose internal tool built for the Total Cash Home Buyers (TCHB) Dispositions team. Each property in the pipeline is broken down into a weighted Standard Operating Procedure (SOP), assigned to the right team members, and tracked to completion in real time. The moment anyone checks off a task, adds a comment, or drops in a draft, every other team member sees it instantly — and the people who need to act get a push notification.
+- **Master Dashboard:** every deal with its strategy, start date, last edit, Next Agent, Next Step, due date and %.
+  - Open, Closed and Cancelled views, strategy filter and sorting.
+- **Deploy:** a new deal gets the SOP for its exit strategy (Wholesale, Novation, Fix & Flip, Creative, or any
+  strategy added in the SOP editor). A Fix & Flip SOW CSV becomes subtasks.
+- **Deal tracker:** phases, groups and weighted tasks, as in the hub's task cards.
+  - Each task and subtask has an owner, a status (Not Started / In Progress / Done), a due date (Eastern time), notes,
+    files and links, drafts, and an activity history.
+  - Inject Custom Task borrows weight so a deal always totals 100%.
+  - Previous and Next move through the deals in the dashboard's current view.
+- **Closed and Cancelled:** a deal can be marked Closed or Cancelled. It becomes read-only and stops sending alerts
+  until it is reopened.
+- **Chat** per deal with pins, search, read receipts, and every link and draft in one place.
+- **Alerts** (Cloud Functions): new deals, completions, comments, drafts and links, Your Turn, reminders, overdue due
+  dates and the 10 AM briefing, by push and in the Notifications list. Each person chooses theirs.
+- **Team** copied from the Universal Team Hub (names, photos, roles, departments). Carlos and Systems edit the SOP.
+- **Light and dark**, phone-ready, live for everyone without reloading. Saving shows Live / Saving… / Not Saved with
+  Retry, and nobody's change overwrites anyone else's.
 
-The app is a **Progressive Web App**: it installs to the home screen, works in standalone mode, and delivers native-style push notifications on desktop and Android.
+User and Manager Guides are inside the app (account menu, Help & Guides).
 
----
-
-## ✨ Features
-
-### Live collaboration
-- **Real-time Firestore sync** — task check-offs, assignments, comments, and drafts propagate to every open session with no refresh.
-- **Live presence** — see exactly which team members are online and active right now.
-- **Per-property comment threads** with deep-linking straight to the referenced comment.
-
-### Weighted SOP engine
-- **Two exit-strategy blueprints** ship built in — **Wholesale** and **Novation** — each with its own phases, sections, weighted tasks, and default agent assignments.
-- **Auto-calculating progress bars** roll weighted task completion up into phase, section, and overall asset percentages.
-- **Scope of Work (SOW) CSV upload** to spin up custom subtasks per deal.
-- **Unlimited custom subtasks** that never distort the main workflow weighting.
-- Smart auto-collapsing task sections keep the workspace clean.
-
-### Intelligent notifications
-A Firebase Cloud Functions backend listens to the pipeline and dispatches targeted alerts, each written to an in-app notification history **and** delivered via Firebase Cloud Messaging:
-
-- 🚀 **New asset deployed** — broadcast to the team, plus a tailored "here are your tasks" alert to each assigned agent.
-- ✅ **Granular completions** — separate alerts for finishing a subtask, task, section, phase, or the entire asset (100%).
-- 🎯 **Task turns** — the next agent in the chain is pinged when it becomes their turn.
-- 💬 **Offline comments** and 📝 **draft / link updates**.
-- ⚠️ **Hourly overdue reminders** on a per-agent, configurable interval.
-- ☀️ **Daily 10 AM briefing** — a personalized digest of every pending task, grouped by property.
-
-Every user gets **role-based default preferences** (dispo agents, transaction coordinators, admins, super admin) and can fine-tune which alerts they receive.
-
-### Immersive UI/UX
-Dark-mode glassmorphism design, custom cursor with an animated mouse glow, a canvas spark/grid background, jelly-pop and rocket micro-animations, and floating contextual tooltips.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | HTML5, Vanilla JavaScript (single-file app) |
-| **Styling** | Tailwind CSS (CDN), Font Awesome 6, Plus Jakarta Sans |
-| **Database** | Firebase Firestore (real-time NoSQL) |
-| **Auth** | Firebase Auth — Google provider, domain-restricted |
-| **Backend** | Firebase Cloud Functions (Node.js 20) |
-| **Push** | Firebase Cloud Messaging (FCM) + service worker |
-| **App shell** | Progressive Web App (Web App Manifest) |
-| **Hosting** | Static host (e.g. Vercel) for the frontend · Firebase for Functions |
-
----
-
-## 📁 Project Structure
+## Repository
 
 ```
-.
-├── index.html                 # The entire frontend application (UI + client logic)
-├── firebase-messaging-sw.js   # FCM service worker for background push notifications
-├── manifest.json              # PWA manifest (installable app metadata)
-├── icon.svg / icon.png        # App icons
-├── logo.svg / google.svg      # Brand + auth assets
-├── firebase.json              # Firebase deploy config (functions codebase)
-├── .firebaserc                # Firebase project alias
-└── functions/
-    ├── index.js               # Cloud Functions: watcher + scheduled jobs + FCM engine
-    └── package.json           # Functions dependencies (firebase-admin, firebase-functions)
+index.html, styles.css, js/   The page (static; js/app.js starts it). Hosted on Vercel; every push to main deploys.
+assets/                       TCHB logos
+firebase-messaging-sw.js      Push notifications (must stay at the site root)
+functions/                    Cloud Functions (Firebase project dispo-ops), deployed with the Firebase CLI
+firebase/                     Firestore and Storage security rules
+docs/DATA.md                  The data contract (paths and fields; what may never change)
+docs/GO-LIVE.md               How a release goes live and how to roll it back
+tests/                        Checks with made-up data against the Firebase emulators (never the real project)
 ```
 
-### Cloud Functions at a glance
+## Working On It
 
-| Function | Trigger | Responsibility |
-|----------|---------|----------------|
-| `propertyWatcher` | Firestore `onWrite` | New assets, completions, comments, drafts/links, task turns |
-| `hourlyReminders` | Pub/Sub schedule (hourly) | Overdue-task reminders on each agent's interval |
-| `dailyBriefing` | Pub/Sub schedule (10 AM ET) | Personalized morning digest of pending tasks |
+The page has no build step: edit `index.html`, `styles.css` or `js/`.
 
----
+- `js/logic.js` holds every calculation and every change to a deal, as plain functions.
+- `js/store.js` talks to Firebase.
+- The screens are in `js/views.js`, `js/views2.js`, `js/sopview.js` and `js/help.js`.
 
-## 🚀 Getting Started
+Checks (Node 20+, Java for the emulators):
 
-### Prerequisites
-- Node.js **20**
-- [Firebase CLI](https://firebase.google.com/docs/cli) (`npm install -g firebase-tools`)
-- A Firebase project with **Firestore**, **Authentication**, and **Cloud Messaging** enabled
-
-### 1. Clone the repository
 ```bash
-git clone https://github.com/RemyTCHB/TCHB-DISPO-OPS.git
-cd TCHB-DISPO-OPS
+cd tests && npm ci && cd ..
 ```
 
-### 2. Configure Firebase
-Drop your own Firebase web config into `firebase-messaging-sw.js` and the client config block in `index.html`:
-```js
-const firebaseConfig = {
-  apiKey: "…",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project",
-  storageBucket: "your-project.firebasestorage.app",
-  messagingSenderId: "…",
-  appId: "…"
-};
-```
-> The Firebase web API key is **not** a secret — your data is protected by Firestore Security Rules and the auth domain restriction (see below).
-
-### 3. Deploy the Cloud Functions
 ```bash
-cd functions
-npm install
-firebase deploy --only functions
+node --test tests/unit/*.test.mjs
 ```
 
-### 4. Host the frontend
-Serve `index.html` and its assets from any static host (Vercel, Firebase Hosting, etc.). On Vercel, connecting the GitHub repo auto-deploys on every push to `main`.
-
-> ⚠️ **Important:** add your final production domain (and `localhost` for testing) to **Firebase Console → Authentication → Settings → Authorized Domains**, or the Google Sign-in popup will be blocked.
-
----
-
-## 🔒 Security
-
-Security is enforced on **both** the frontend and the backend, so the database stays locked down even if the client code is inspected.
-
-**1. Domain-restricted Google OAuth.** Sign-in uses the Google provider with the `hd` hosted-domain hint, and the client only admits emails ending in your company domain.
-
-**2. Firestore Security Rules.** Read/write is granted only to authenticated users whose token email matches your company domain:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null
-        && request.auth.token.email.matches('.*@YOUR_DOMAIN[.]com');
-    }
-  }
-}
+```bash
+tests/node_modules/.bin/firebase emulators:exec --project demo-dispo-ops "node --test tests/emu/ && node tests/e2e.mjs && node tests/scenario.mjs new && node tests/compare.mjs"
 ```
 
-**3. Destructive-action guard.** Permanently removing an asset requires an authorization password before the deletion is committed.
+```bash
+tests/node_modules/.bin/firebase emulators:exec --project demo-dispo-ops --only firestore,auth "node tests/look.mjs"
+```
+
+What each one does:
+- `tests/unit`: the calculations, compared with the pre-revamp page's own code on many made-up deals, and the Cloud
+  Functions' rules.
+- `tests/emu`: the security rules.
+- `tests/e2e.mjs`: every action through the real buttons, as several made-up people, with the Cloud Functions running.
+- `tests/compare.mjs`: what the page saves, field by field, against the pre-revamp page.
+- `tests/look.mjs`: screenshots in light and dark, desktop and phone.
+
+For the functions emulator, put `HUB_URL=http://127.0.0.1:5399` and `APP_URL=http://127.0.0.1:5330` in
+`functions/.env.local`, and `HUB_SYNC_SECRET=test-only-secret` in `functions/.secret.local`. Both files are git-ignored.
+
+**Privacy.** This repository is public. Real deals, addresses, people and amounts never go into code, tests, commits
+or logs. Tests use made-up data, and the Cloud Functions log counts only. Secrets live in Firebase (Secret Manager)
+and Vercel settings, never in the code.
+
+## Security
+
+- Google sign-in with company accounts only (@totalchb.com, verified).
+- The Firestore and Storage rules in `firebase/` enforce this on the server.
+- Only Carlos and Systems can change the SOP.
+- Only the server writes the team copy.
+
+## Connected Apps
+
+- **Universal Team Hub** (hub.totalchb.com). DISPO OPS asks the hub's signed team endpoint for every department when a
+  Manager clicks Refresh From Hub.
+- **Hub deal sync** (one way, built, switched off). It sends each deal as "DISPO - &lt;address&gt;" to the hub's
+  `/api/dispo-ops`. To turn it on, set `HUB_SYNC_ENABLED=true` in `functions/.env` and redeploy the functions.
+- Both use the shared secret `HUB_SYNC_SECRET` (Firebase secret). The hub has the same value as `DISPO_OPS_SYNC_SECRET`.
 
 ---
 
-## 📋 SOP Blueprint Reference
-
-The SOP is hard-coded per exit strategy, with each task carrying a weight and a default assignee. The **Wholesale** flow is organized into three phases:
-
-| Phase | Focus | Weight |
-|-------|-------|--------|
-| **Phase I** | Deal Intake | 10% |
-| **Phase II** | Marketing Prep | 40% |
-| **Phase III** | Marketing Execution | 50% |
-
-A separate **Novation** blueprint covers retail viability, pricing, and closing. Tasks are auto-assigned to default agents on asset creation and can be reassigned live inside the tracker.
-
----
-
-## 👥 Roles
-
-| Role | Members | Default notification profile |
-|------|---------|------------------------------|
-| **Dispo Agents** | Carlos, Yanna, Moe, Sara | Full alerts (completions, turns, reminders, daily brief) |
-| **Transaction Coordinators** | Monz, Chris | Full alerts |
-| **Admins** | Brandy, Luke, Info | Oversight alerts (new assets, completions, drafts) |
-| **Super Admin** | Systems | Silent by default (manage / monitor) |
-
----
-
-## 📄 License
-
-Internal proprietary tool — © Total Cash Home Buyers. All rights reserved.
-
-<div align="center">
-<br/>
-<sub>Built for the TCHB Dispositions team ⚡</sub>
-</div>
+<p align="center"><sub>© Total Cash Home Buyers. Internal use only.</sub></p>

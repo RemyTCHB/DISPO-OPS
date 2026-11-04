@@ -75,4 +75,4 @@ async function main() {
   errors.slice(0, 15).forEach(e => console.log('  error:', e.slice(0, 300)));
   await browser.close(); srv.close();
 }
-main().catch(e => { console.error(e); process.exit(1); });
+if (process.argv[1] && process.argv[1].endsWith("look.mjs")) main().catch(e => { console.error(e); process.exit(1); });

@@ -1,6 +1,17 @@
 const functions = require("firebase-functions/v1");
+const { defineSecret, defineString, defineBoolean } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const { isClosed, overdueItems, overdueDue, directoryFrom, sign, hubPayload, payloadKey, DEPTS } = require("./lib");
 admin.initializeApp();
+
+// Revamp settings. HUB_SYNC_SECRET is set once with `firebase functions:secrets:set HUB_SYNC_SECRET` (the same value
+// as DISPO_OPS_SYNC_SECRET in the hub's Vercel settings); never put its value in code. The sync into the hub stays
+// off until HUB_SYNC_ENABLED is set to true (functions/.env).
+const HUB_SECRET = defineSecret("HUB_SYNC_SECRET");
+const HUB_URL = defineString("HUB_URL", { default: "https://hub.totalchb.com" });
+const APP_URL = defineString("APP_URL", { default: "https://dispo-ops.totalchb.com" });
+const HUB_SYNC_ENABLED = defineBoolean("HUB_SYNC_ENABLED", { default: false });
+const ROOT_MANAGERS = ["brandy@totalchb.com", "systems@totalchb.com"];
 
 // Centralized Default Preferences Mapping
 function getDefaultPrefs(email) {
@@ -53,7 +64,9 @@ function resolveUserPrefs(prefs) {
 // THE EVENT ROBOT (Triggers instantly on property saves/updates)
 // Handles: New Assets, Completions, Comments, Drafts/Links, and Task Turns
 // ============================================================================
-exports.propertyWatcher = functions.firestore
+// The hub secret is only attached while the sync is switched on, so deploying works before it is set up.
+const WATCHER_OPTS = String(process.env.HUB_SYNC_ENABLED).toLowerCase() === 'true' ? { secrets: [HUB_SECRET] } : {};
+exports.propertyWatcher = functions.runWith(WATCHER_OPTS).firestore
   .document("artifacts/{appId}/public/data/properties/{propertyId}")
   .onWrite(async (change, context) => {
     const db = admin.firestore();
@@ -61,7 +74,13 @@ exports.propertyWatcher = functions.firestore
     const afterData = change.after ? change.after.data() : null;
     const appId = context.params.appId;
 
-    if (!afterData) return null; // Property was deleted
+    // The one-way sync into the hub (does nothing while it is switched off)
+    const hubJob = hubSyncDeal(db, appId, context.params.propertyId, afterData).catch(e => console.error('hub sync failed:', e.message));
+
+    if (!afterData) return hubJob; // Property was deleted
+
+    // Closed / Cancelled deals send no alerts (revamp); reopening a deal turns them back on.
+    if (isClosed(afterData)) return hubJob;
 
     // OPTIMIZATION: fetch user preferences ONCE per trigger and reuse it across
     // every broadcast below, instead of re-querying inside each call.
@@ -276,6 +295,7 @@ exports.propertyWatcher = functions.firestore
         }
     }
 
+    promises.push(hubJob);
     return Promise.all(promises);
 });
 
@@ -297,6 +317,7 @@ exports.hourlyReminders = functions.pubsub.schedule('0 * * * *').onRun(async (co
         // Resilience: one malformed property must not abort reminders for everyone else.
         try {
             const prop = doc.data();
+            if (isClosed(prop)) return; // Closed / Cancelled deals send no reminders (revamp)
             const lastEdited = prop.dateLastEdited || prop.dateStarted;
             if (!lastEdited) return; 
             const hoursSinceEdit = (now - lastEdited) / (1000 * 60 * 60);
@@ -339,6 +360,38 @@ exports.hourlyReminders = functions.pubsub.schedule('0 * * * *').onRun(async (co
             console.error('hourlyReminders: skipped property', doc.id, e);
         }
     });
+
+    // Overdue due dates (revamp): the task's owner gets one alert when a task or subtask passes its due date, then
+    // one on their reminder interval until it is done, the date moves or the deal is closed. Uses Overdue Reminders.
+    for (const doc of propsSnapshot.docs) {
+        try {
+            const prop = doc.data(), items = overdueItems(prop, now);
+            if (!items.length) continue;
+            const appId = doc.ref.path.split('/')[1] || "tchb-dispo-ops";
+            const stateRef = db.doc(`artifacts/${appId}/server/overdue-${doc.id}`);
+            const state = (await stateRef.get()).data() || {}, sent = state.sent || {}, next = {};
+            for (const item of items) {
+                const owner = normalizeAgent(item.owner);
+                prefsSnapshot.forEach(prefDoc => {
+                    const prefs = prefDoc.data(), userPrefs = resolveUserPrefs(prefs);
+                    if (emailPrefixOf(prefs.email) !== owner || userPrefs.reminders !== true) return;
+                    const key = item.key + '|' + prefDoc.id, last = sent[key] || null;
+                    const interval = parseInt(userPrefs.reminder_interval || "4");
+                    if (overdueDue(last, item, now, interval)) {
+                        next[key] = { due: item.due, at: now };
+                        promises.push(dispatchUserAppNotification(db, prefDoc.ref.path.split('/')[1] || appId, prefDoc.id, userPrefs, {
+                            title: "Overdue: " + (item.task ? item.task + " - " : "") + item.title,
+                            body: `${prop.address} - this was due ${new Date(item.due).toLocaleString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' })} ET.`,
+                            extraData: { action: 'open_property', propId: prop.id }
+                        }));
+                    } else next[key] = last;
+                });
+            }
+            promises.push(stateRef.set({ sent: next, checkedAt: now }));
+        } catch (e) {
+            console.error('hourlyReminders: overdue check skipped a property', doc.id, e.message);
+        }
+    }
     return Promise.all(promises);
 });
 
@@ -354,6 +407,7 @@ exports.dailyBriefing = functions.pubsub.schedule('0 10 * * *').timeZone('Americ
         // Resilience: skip and log a bad property rather than failing the whole briefing.
         try {
             const prop = doc.data();
+            if (isClosed(prop)) return; // Closed / Cancelled deals are left out of the briefing (revamp)
             if (prop.tasks) {
                 prop.tasks.forEach(t => {
                     if (!t.completed || (t.subtasks && t.subtasks.length > 0 && !t.subtasks.every(s => s.completed))) {
@@ -491,3 +545,58 @@ async function dispatchUserAppNotification(db, appId, uid, prefs, payload) {
 
     return Promise.all(promises);
 }
+
+// ============================================================================
+// THE TEAM FROM THE UNIVERSAL TEAM HUB (revamp)
+// A Manager clicks Refresh From Hub (Team): the hub's signed team endpoint answers with every department, saved in
+// public/data/settings/directory (the page shows names and photos from it; deals keep storing first names).
+// ============================================================================
+exports.refreshDirectory = functions.runWith({ secrets: [HUB_SECRET] }).https.onCall(async (data, context) => {
+    const email = String((context.auth && context.auth.token.email) || '').toLowerCase();
+    if (!context.auth || !context.auth.token.email_verified || !email.endsWith('@totalchb.com')) {
+        throw new functions.https.HttpsError('unauthenticated', 'Sign in with your company account.');
+    }
+    const db = admin.firestore(), ref = db.doc('artifacts/tchb-dispo-ops/public/data/settings/directory');
+    const current = (await ref.get()).data() || {};
+    const managers = [...ROOT_MANAGERS, ...(current.managers || [])];
+    if (!managers.includes(email)) throw new functions.https.HttpsError('permission-denied', 'Only Managers can refresh the team.');
+    const secret = HUB_SECRET.value();
+    if (!secret) throw new functions.https.HttpsError('failed-precondition', 'The hub connection is not set up yet (HUB_SYNC_SECRET).');
+    const body = JSON.stringify({ depts: DEPTS });
+    const r = await fetch(HUB_URL.value().replace(/\/$/, '') + '/api/title-agent/team', { method: 'POST', headers: { 'Content-Type': 'application/json', ...sign(secret, body) }, body });
+    if (!r.ok) { console.error('refreshDirectory: the hub answered', r.status); throw new functions.https.HttpsError('unavailable', 'The hub did not answer (' + r.status + '). Try again later.'); }
+    const dir = directoryFrom(await r.json(), Date.now(), (current.people && current.people[email] && current.people[email].name) || email.split('@')[0]);
+    await ref.set(dir);
+    const depts = new Set(Object.values(dir.people).map(p => p.dept).filter(Boolean)).size;
+    console.log(`refreshDirectory: ${Object.keys(dir.people).length} people, ${depts} departments`);
+    return { people: Object.keys(dir.people).length, depts };
+});
+
+// ============================================================================
+// THE ONE-WAY SYNC INTO THE UNIVERSAL TEAM HUB (revamp, switched off)
+// Sent after each change that moves a deal's progress, plus a daily catch-up. Logs counts only.
+// ============================================================================
+async function hubSyncDeal(db, appId, id, prop, force = false) {
+    if (!HUB_SYNC_ENABLED.value()) return null;
+    const secret = HUB_SECRET.value(); if (!secret) return null;
+    const payload = hubPayload(id, prop, APP_URL.value().replace(/\/$/, '')), key = payloadKey(payload);
+    const stateRef = db.doc(`artifacts/${appId}/server/hubsync-${id}`), last = (await stateRef.get()).data() || {};
+    if (!force && last.key === key) return null;              // nothing the hub shows has changed
+    const body = JSON.stringify(payload);
+    const r = await fetch(HUB_URL.value().replace(/\/$/, '') + '/api/dispo-ops', { method: 'POST', headers: { 'Content-Type': 'application/json', ...sign(secret, body) }, body });
+    if (!r.ok) { await stateRef.set({ error: 'hub answered ' + r.status, at: Date.now() }, { merge: true }); throw new Error('hub answered ' + r.status); }
+    await stateRef.set({ key, at: Date.now(), error: null }, { merge: true });
+    return true;
+}
+
+exports.hubSyncDaily = functions.runWith({ secrets: [HUB_SECRET] }).pubsub.schedule('15 7 * * *').timeZone('America/New_York').onRun(async () => {
+    if (!HUB_SYNC_ENABLED.value()) return null;
+    const db = admin.firestore(), snap = await db.collectionGroup('properties').get();
+    let ok = 0, failed = 0;
+    for (const doc of snap.docs) {
+        try { await hubSyncDeal(db, doc.ref.path.split('/')[1] || 'tchb-dispo-ops', doc.id, doc.data(), true); ok++; }
+        catch (e) { failed++; }
+    }
+    console.log(`hubSyncDaily: ${snap.size} deals, sent ${ok}, failed ${failed}`);
+    return null;
+});

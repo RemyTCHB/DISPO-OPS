@@ -13,11 +13,11 @@ const kb = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Mat
 // ---------------------------------------------------------------- the floating layer
 export function menuHtml() {
   const m = S.menu; if (!m) return '';
-  if (m.kind === 'choose') return `<div class="menu" role="menu">${m.options.map(o => o.header ? `<div class="label">${esc(o.header)}</div>`
+  if (m.kind === 'choose') return `<div class="menu" data-key="menu" role="menu">${m.options.map(o => o.header ? `<div class="label">${esc(o.header)}</div>`
     : o.hr ? '<hr>' : `<button type="button" class="mi" role="menuitem" data-act="choose" data-i="${o.i}" aria-selected="${!!o.selected}">${o.face || ''}<span class="grow">${esc(o.label)}</span>${o.hint ? `<small class="muted">${esc(o.hint)}</small>` : ''}${o.selected ? '<span class="tick"></span>' : ''}</button>`).join('')}</div>`;
   if (m.kind === 'user') {
     const u = S.user;
-    return `<div class="menu" role="menu"><div class="label">${esc(myName())}</div><div style="padding:0 12px 6px;font-size:12px" class="muted">${esc(u.email)}</div><hr>
+    return `<div class="menu" data-key="menu" role="menu"><div class="label">${esc(myName())}</div><div style="padding:0 12px 6px;font-size:12px" class="muted">${esc(u.email)}</div><hr>
       <button type="button" class="mi" data-act="openPrefs">${icon('bell', 16)}Notification Settings</button>
       <button type="button" class="mi" data-act="openTeam">${icon('users', 16)}Team</button>
       <button type="button" class="mi" data-act="tab" data-tab="help">${icon('help', 16)}Help & Guides</button><hr>
@@ -25,7 +25,7 @@ export function menuHtml() {
   }
   if (m.kind === 'active') {
     const list = S.online.length ? S.online : [{ email: S.user.email, sessions: { x: { lastActive: Date.now(), type: 'Desktop' } } }];
-    return `<div class="menu" role="menu"><div class="label">Personnel Online · ${list.length}</div>${list.map(u => {
+    return `<div class="menu" data-key="menu" role="menu"><div class="label">Personnel Online · ${list.length}</div>${list.map(u => {
       const t = Date.now(), ss = Object.values(u.sessions || {}).filter(s => t - s.lastActive < 300000);
       const mob = ss.some(s => s.type === 'Mobile'), desk = ss.some(s => s.type !== 'Mobile'), stored = L.storedNameFor(u.email);
       return `<div class="mi" style="cursor:default">${face(stored)}<span class="grow">${esc(label(stored) === stored ? u.email.split('@')[0] : label(stored))}</span><span title="Phone" style="opacity:${mob ? 1 : 0.25}">${icon('phone', 15)}</span><span title="Desktop" style="opacity:${desk ? 1 : 0.25}">${icon('desktop', 15)}</span></div>`;
@@ -44,7 +44,7 @@ function notifsHtml() {
       <div class="body" data-act="notifOpen" data-id="${esc(x.id)}"><b>${esc(x.title)}</b><p>${esc(x.body)}</p><small>${esc(L.timeSince(x.createdAt, now()))} · ${esc(L.whenShort(x.createdAt))}</small></div>
       <button type="button" class="mini" data-act="notifDelete" data-id="${esc(x.id)}" title="Delete">${icon('trash', 15)}</button></div>`).join('')
     : `<div class="pop-empty">You're all caught up!</div>`;
-  return `<div class="menu pop" role="dialog" aria-label="Notifications" style="width:420px">${head}<div class="pop-list" style="gap:2px">${items}</div></div>`;
+  return `<div class="menu pop" data-key="menu" role="dialog" aria-label="Notifications" style="width:420px">${head}<div class="pop-list" style="gap:2px">${items}</div></div>`;
 }
 
 // ---------------------------------------------------------------- popovers
@@ -52,8 +52,8 @@ function popHtml(m) {
   const d = deal(m.dealId); if (!d) return '';
   const it = itemAt(d, m.tg); if (!it) return '';
   const locked = L.isLocked(d), title = m.tg ? it.title : d.address;
-  const head = (name, extra = '') => `<div class="pop-head"><b>${name}<small>${esc(title)}</small></b>${extra}<button type="button" class="mini" data-act="closeMenu" aria-label="Close">${icon('x', 18)}</button></div>`;
-  if (m.pop === 'due') return `<div class="menu dp-menu" role="dialog" aria-label="Due date">${dpHtml(m.dp, { label: 'Due Date', title, hasValue: !!it.due, nowMs: now() })}</div>`;
+  const head = (name, extra = '') => `<div class="pop-head" data-key="head"><b>${name}<small>${esc(title)}</small></b>${extra}<button type="button" class="mini" data-act="closeMenu" aria-label="Close">${icon('x', 18)}</button></div>`;
+  if (m.pop === 'due') return `<div class="menu dp-menu" data-key="menu" role="dialog" aria-label="Due date">${dpHtml(m.dp, { label: 'Due Date', title, hasValue: !!it.due, nowMs: now() })}</div>`;
   if (m.pop === 'activity') {
     const logs = (d.log || []).filter(e => !m.tg ? true : m.tg.sid ? e.sid === m.tg.sid : e.tid === m.tg.tid).slice().reverse();
     const line = e => {
@@ -62,7 +62,7 @@ function popHtml(m) {
         : `${esc(e.ev)}${e.title ? ` <b>${esc(e.title)}</b>` : ''}${e.name ? ` (${esc(e.name)})` : ''}`;
       return `<div class="pop-item"><div class="by">${esc(e.by)} · ${esc(L.when(e.at))}</div><div class="txt">${what}</div></div>`;
     };
-    return `<div class="menu pop" role="dialog" aria-label="Activity">${head('Activity')}<div class="pop-list">${logs.length ? logs.map(line).join('') : '<div class="pop-empty">No changes recorded yet. Changes made from today on are listed here, with who and when.</div>'}</div></div>`;
+    return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Activity">${head('Activity')}<div class="pop-list" data-key="list">${logs.length ? logs.map(line).join('') : '<div class="pop-empty">No changes recorded yet. Changes made from today on are listed here, with who and when.</div>'}</div></div>`;
   }
   // notes and files: on the deal, everything on it; on a task, its own (and its subtasks' with the switch)
   const sources = [];
@@ -80,9 +80,9 @@ function popHtml(m) {
     const row = e => e.kind === 'note'
       ? `<div class="pop-item"><div class="by">${esc(e.n.by)} · ${esc(L.when(e.n.at))}${e.src.tag ? ` <span class="chip">${esc(e.src.tag)}</span>` : ''}<span class="grow"></span>${e.n.by === myName() && !locked ? `<button type="button" class="mini" data-act="deleteNote" data-nid="${esc(e.n.id)}" ${tgAttrs(e.src.tg)} title="Delete note">${icon('trash', 14)}</button>` : ''}</div><div class="txt">${esc(e.n.text)}</div></div>`
       : `<div class="pop-item"><div class="by"><span class="chip gold">${String(e.src.it.title || '').toLowerCase().includes('approved') ? 'Template' : 'Draft'}</span>${e.src.it.templateLastEditedBy ? `${esc(label(e.src.it.templateLastEditedBy))} · ${esc(L.when(e.src.it.templateLastEditedAt))}` : ''}${e.src.tag ? ` <span class="chip">${esc(e.src.tag)}</span>` : ''}<span class="grow"></span><button type="button" class="mini" data-act="copy" data-text="${esc(e.src.it.templateText)}" title="Copy">${icon('copy', 14)}</button></div><div class="txt">${esc(e.src.it.templateText)}</div></div>`;
-    const sw = m.tg && !m.tg.sid && (it.subtasks || []).length ? `<label class="check-row" style="font-size:13px"><button type="button" class="switch" role="switch" aria-checked="${!!m.withSubs}" data-act="popSubs"></button>Include Subtask Notes</label>` : '';
-    return `<div class="menu pop" role="dialog" aria-label="Notes">${head('Notes')}${sw}<div class="pop-list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No notes yet.</div>'}</div>
-      ${locked ? '' : `<div class="pop-foot"><textarea class="input" id="noteText" placeholder="Write a note..." rows="2"></textarea><button type="button" class="btn sm primary" data-act="addNote" ${tgAttrs(m.tg)}>Add</button></div>`}</div>`;
+    const sw = m.tg && !m.tg.sid && (it.subtasks || []).length ? `<label class="check-row" data-key="sw" style="font-size:13px"><button type="button" class="switch" role="switch" aria-checked="${!!m.withSubs}" data-act="popSubs"></button>Include Subtask Notes</label>` : '';
+    return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Notes">${head('Notes')}${sw}<div class="pop-list" data-key="list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No notes yet.</div>'}</div>
+      ${locked ? '' : `<div class="pop-foot" data-key="foot"><textarea class="input" id="noteText" placeholder="Write a note..." rows="2"></textarea><button type="button" class="btn sm primary" data-act="addNote" ${tgAttrs(m.tg)}>Add</button></div>`}</div>`;
   }
   // files & links
   const entries = [];
@@ -97,10 +97,10 @@ function popHtml(m) {
     return `<div class="pop-item"><div class="by">${icon(f.kind === 'link' ? 'link' : 'file', 14)}${esc(f.by)} · ${esc(L.when(f.at))}${f.size ? ' · ' + kb(f.size) : ''}${e.src.tag ? ` <span class="chip">${esc(e.src.tag)}</span>` : ''}<span class="grow"></span>${locked ? '' : `<button type="button" class="mini" data-act="removeFile" data-fid="${esc(f.id)}" ${tgAttrs(e.src.tg)} title="Remove">${icon('trash', 14)}</button>`}</div>${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(f.name)}</a>` : esc(f.name)}</div>`;
   };
   const mode = m.mode || 'file';
-  const add = locked ? '' : `<div class="seg small" role="group"><button type="button" data-act="popMode" data-v="file" aria-pressed="${mode === 'file'}">${icon('upload', 15)}Upload Files</button><button type="button" data-act="popMode" data-v="link" aria-pressed="${mode === 'link'}">${icon('link', 15)}Add Link</button></div>
-    ${mode === 'file' ? `<label class="drop">${m.uploading ? '<span class="spin"></span><b>Uploading…</b>' : `${icon('upload', 22)}<b>Choose Files</b><small class="muted">Up to ${MAX_FILE / 1048576} MB each</small>`}<input type="file" multiple class="sr" data-change="uploadFiles" ${tgAttrs(m.tg)}></label>`
-      : `<div class="stack" style="gap:8px"><input class="input" id="linkName" placeholder="Name (optional)"><input class="input" id="linkUrl" placeholder="https://..." data-enter="addLinkFile" ${tgAttrs(m.tg)}><button type="button" class="btn sm primary" data-act="addLinkFile" ${tgAttrs(m.tg)}>Add Link</button></div>`}`;
-  return `<div class="menu pop" role="dialog" aria-label="Files and links">${head('Files & Links')}${add}<div class="pop-list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No files or links yet.</div>'}</div></div>`;
+  const add = locked ? '' : `<div class="seg small" data-key="mode" role="group"><button type="button" data-act="popMode" data-v="file" aria-pressed="${mode === 'file'}">${icon('upload', 15)}Upload Files</button><button type="button" data-act="popMode" data-v="link" aria-pressed="${mode === 'link'}">${icon('link', 15)}Add Link</button></div>
+    ${mode === 'file' ? `<label class="drop" data-key="add-file">${m.uploading ? '<span class="spin"></span><b>Uploading…</b>' : `${icon('upload', 22)}<b>Choose Files</b><small class="muted">Up to ${MAX_FILE / 1048576} MB each</small>`}<input type="file" multiple class="sr" data-change="uploadFiles" ${tgAttrs(m.tg)}></label>`
+      : `<div class="stack" data-key="add-link" style="gap:8px"><input class="input" id="linkName" placeholder="Name (optional)"><input class="input" id="linkUrl" placeholder="https://..." data-enter="addLinkFile" ${tgAttrs(m.tg)}><button type="button" class="btn sm primary" data-act="addLinkFile" ${tgAttrs(m.tg)}>Add Link</button></div>`}`;
+  return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Files and links">${head('Files & Links')}${add}<div class="pop-list" data-key="list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No files or links yet.</div>'}</div></div>`;
 }
 
 // ---------------------------------------------------------------- chat (stored as before: comments, readBy, pins)
@@ -114,8 +114,8 @@ export function chatHtml() {
   const close = `<button type="button" class="mini" data-act="chatClose" aria-label="Close chat">${icon('x', 20)}</button>`;
   if (!d || c.view === 'hub') {
     const items = allDeals().map(p => { const cm = p.comments || [], last = cm[cm.length - 1]; return { p, last, unread: unreadFor(p), at: last ? last.timestamp : p.dateStarted }; }).sort((a, b) => b.at - a.at);
-    return `<div class="chat-head"><div class="grow"><b>Active Discussions</b><small>Every deal's chat</small></div>${close}</div>
-      <div class="chat-body">${items.length ? items.map(x => `<button type="button" class="hub-item" data-act="chatOpenDeal" data-id="${esc(x.p.id)}"><div class="row"><b>${esc(x.p.address)}</b>${x.unread ? `<span class="chip red">${x.unread} New</span>` : ''}</div>
+    return `<div class="chat-head" data-key="hub-head"><div class="grow"><b>Active Discussions</b><small>Every deal's chat</small></div>${close}</div>
+      <div class="chat-body" data-key="hub-body">${items.length ? items.map(x => `<button type="button" class="hub-item" data-act="chatOpenDeal" data-id="${esc(x.p.id)}"><div class="row"><b>${esc(x.p.address)}</b>${x.unread ? `<span class="chip red">${x.unread} New</span>` : ''}</div>
         <p>${x.last ? `<b style="font-size:13px">${esc(authorLabel(x.last.author))}:</b> ${esc(x.last.text)}` : '<span class="muted">No messages yet</span>'}</p><small>${esc(L.timeSince(x.at, now()))}</small></button>`).join('') : '<div class="pop-empty">No active discussions. Deploy a new asset to begin tracking!</div>'}</div>`;
   }
   const mine = myPrefix().toLowerCase(), term = c.searching ? c.search.toLowerCase() : '';
@@ -130,7 +130,7 @@ export function chatHtml() {
   let overlay = '';
   if (c.overlay === 'pins') {
     const pins = (d.comments || []).filter(m => m.pinned);
-    overlay = `<div class="overlay"><div class="chat-head"><div class="grow"><b>Pinned Messages</b><small>${esc(d.address)}</small></div><button type="button" class="mini" data-act="chatOverlay" data-v="" aria-label="Close">${icon('x', 20)}</button></div>
+    overlay = `<div class="overlay" data-key="ov-pins"><div class="chat-head"><div class="grow"><b>Pinned Messages</b><small>${esc(d.address)}</small></div><button type="button" class="mini" data-act="chatOverlay" data-v="" aria-label="Close">${icon('x', 20)}</button></div>
       <div class="chat-body">${pins.length ? pins.map(m => `<button type="button" class="hub-item" data-act="chatJump" data-cid="${esc(m.id)}"><div class="row"><b>${esc(authorLabel(m.author))}</b><small>${esc(L.whenShort(m.timestamp))}</small></div><p style="white-space:pre-wrap">${esc(m.text)}</p></button>`).join('') : '<div class="pop-empty">No pinned messages yet.</div>'}</div></div>`;
   } else if (c.overlay === 'links') {
     const items = [];
@@ -144,13 +144,13 @@ export function chatHtml() {
         ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${icon('link', 12)} ${esc(x.link)}</a>` : ''}${urls.map(u => `<a href="${esc(safeUrl(u))}" target="_blank" rel="noopener">${icon('ext', 12)} ${esc(u)}</a>`).join('')}
         ${x.template ? `<div class="inline-box"><div class="row"><small><b>Draft Content</b></small><button type="button" class="btn sm ghost" data-act="copy" data-text="${esc(x.template.trim())}">${icon('copy', 14)}Copy</button></div><div class="txt" style="font-size:13px">${esc(x.template.trim())}</div></div>` : ''}</div>`;
     }).join('');
-    overlay = `<div class="overlay"><div class="chat-head"><div class="grow"><b>Links & Attachments</b><small>${esc(d.address)}</small></div><button type="button" class="mini" data-act="chatOverlay" data-v="" aria-label="Close">${icon('x', 20)}</button></div><div class="chat-body">${body || '<div class="pop-empty">No links or templates found for this asset.</div>'}</div></div>`;
+    overlay = `<div class="overlay" data-key="ov-links"><div class="chat-head"><div class="grow"><b>Links & Attachments</b><small>${esc(d.address)}</small></div><button type="button" class="mini" data-act="chatOverlay" data-v="" aria-label="Close">${icon('x', 20)}</button></div><div class="chat-body">${body || '<div class="pop-empty">No links or templates found for this asset.</div>'}</div></div>`;
   }
-  return `${overlay}<div class="chat-head"><button type="button" class="mini" data-act="chatHub" title="Back to all discussions" aria-label="Back to all discussions">${icon('back', 20, 2.5)}</button><div class="grow"><b>Property Discussion</b><small>${esc(d.address)}</small></div>
+  return `${overlay}<div class="chat-head" data-key="head-${esc(d.id)}"><button type="button" class="mini" data-act="chatHub" title="Back to all discussions" aria-label="Back to all discussions">${icon('back', 20, 2.5)}</button><div class="grow"><b>Property Discussion</b><small>${esc(d.address)}</small></div>
       <button type="button" class="mini" data-act="chatOverlay" data-v="pins" title="Pinned Messages">${icon('pin', 18)}</button><button type="button" class="mini" data-act="chatSearch" title="Search">${icon('search', 18)}</button><button type="button" class="mini" data-act="chatOverlay" data-v="links" title="View Links & Files">${icon('clip', 18)}</button>${close}</div>
-    ${c.searching ? `<div class="chat-search"><input class="input" id="chatSearch" data-input="chatSearch" value="${esc(c.search)}" placeholder="Search discussion..." style="padding:8px 12px"></div>` : ''}
-    <div class="chat-body" id="chatMessages">${msgs}</div>
-    <div class="chat-foot"><input class="input" id="chatInput" placeholder="Type a message..." data-enter="chatSend" autocomplete="off"><button type="button" class="btn primary" data-act="chatSend" aria-label="Send" style="padding:0 14px">${icon('right', 20, 2.5)}</button></div>`;
+    ${c.searching ? `<div class="chat-search" data-key="search"><input class="input" id="chatSearch" data-input="chatSearch" placeholder="Search discussion..." style="padding:8px 12px"></div>` : ''}
+    <div class="chat-body" id="chatMessages" data-key="body-${esc(d.id)}">${msgs}</div>
+    <div class="chat-foot" data-key="foot-${esc(d.id)}"><input class="input" id="chatInput" placeholder="Type a message..." data-enter="chatSend" autocomplete="off"><button type="button" class="btn primary" data-act="chatSend" aria-label="Send" style="padding:0 14px">${icon('right', 20, 2.5)}</button></div>`;
 }
 
 // ---------------------------------------------------------------- dialogs

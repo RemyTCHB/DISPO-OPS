@@ -1,0 +1,17 @@
+rules_version = '2';
+// DISPO OPS files (new). Paste into Firebase console > Storage > Rules, or deploy with
+// `firebase deploy --only storage`. Files on a deal: any verified @totalchb.com account can open, add and delete
+// them; 25 MB per file (MAX_FILE in js/store.js). Nothing else is stored.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function team() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().split('@')[1] == 'totalchb.com';
+    }
+    match /files/{dealId}/{fileName} {
+      allow read, delete: if team();
+      allow create: if team() && request.resource.size < 25 * 1024 * 1024;
+    }
+  }
+}

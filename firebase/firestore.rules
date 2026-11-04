@@ -1,10 +1,28 @@
 rules_version = '2';
+// DISPO OPS (Firebase project dispo-ops). Paste into Firebase console > Firestore > Rules, or deploy with
+// `firebase deploy --only firestore:rules`. Every path the page and the Cloud Functions used before keeps exactly the
+// same access (any verified @totalchb.com account). New: the SOP can only be changed by Carlos and Systems, the
+// team copied from the hub is written by the server only, and server bookkeeping is closed to the page.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null
+    function team() {
+      return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email.lower().split('@')[1] == 'totalchb.com';
     }
+    function sopEditor() {
+      return team() && request.auth.token.email.lower() in ['carlos@totalchb.com', 'systems@totalchb.com'];
+    }
+
+    // As before
+    match /artifacts/{app}/public/data/properties/{id} { allow read, write: if team(); }
+    match /artifacts/{app}/public/data/active_users/{id} { allow read, write: if team(); }
+    match /artifacts/{app}/public/data/user_preferences/{id} { allow read, write: if team(); }
+    match /artifacts/{app}/users/{uid}/notifications/{id} { allow read, write: if team(); }
+
+    // New
+    match /artifacts/{app}/public/data/settings/sop { allow read: if team(); allow write: if sopEditor(); }
+    match /artifacts/{app}/public/data/settings/directory { allow read: if team(); allow write: if false; }
+    match /artifacts/{app}/server/{rest=**} { allow read, write: if false; }
   }
 }

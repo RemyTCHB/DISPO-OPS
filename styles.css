@@ -626,3 +626,5 @@ table.deals tbody tr:last-child td { border-bottom: none; }
   .nav-row .btn.primary { order: 6; flex: 1 1 100%; }
 }
 .menu.dp-menu { max-height: min(640px, calc(100vh - 16px)); }
+/* toasts never block what is under them (they go away on their own) */
+.toast { pointer-events: none; }

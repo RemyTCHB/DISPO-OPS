@@ -109,3 +109,15 @@ test('SOP check blocks totals other than 100%', () => {
   const s = JSON.parse(JSON.stringify(DEFAULT_SOP)); s.Creative[0].weight = 19;
   assert.match(L.sopProblems(s)[0], /Creative totals 99%/);
 });
+
+test('no change ever writes an undefined value (Firestore would refuse the whole save)', () => {
+  const d = L.newDeal(DEFAULT_SOP, '1 Test St', 'Wholesale', null), x = { now: 5, me: 'carlos', name: 'C' }, t = { tid: d.tasks[0].id, ti: 0 };
+  L.edit.addSubtask(d, x, t, { title: 'S' }); const s = { ...t, sid: d.tasks[0].subtasks[0].id, si: 0 };
+  for (const tg of [{}, t, s]) {
+    L.edit.setDue(d, x, tg, 99); L.edit.addNote(d, x, tg, 'n'); L.edit.addFile(d, x, tg, { kind: 'link', name: 'l', url: 'https://x' });
+    if (tg.tid) { L.edit.saveTemplate(d, x, tg, 'draft'); L.edit.saveLink(d, x, tg, 'x.com'); L.edit.clearLink(d, x, tg); }
+  }
+  L.edit.setStatus(d, x, 'closed'); L.edit.setStatus(d, x, 'open');
+  const bad = []; (function walk(v, p) { if (v === undefined) bad.push(p); else if (v && typeof v === 'object') for (const [k, w] of Object.entries(v)) walk(w, p + '.' + k); })(d, 'deal');
+  assert.deepEqual(bad, []);
+});
