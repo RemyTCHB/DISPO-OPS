@@ -5,7 +5,7 @@ const { isClosed, overdueItems, overdueDue, directoryFrom, sign, hubPayload, pay
 admin.initializeApp();
 
 // Revamp settings. HUB_SYNC_SECRET is set once with `firebase functions:secrets:set HUB_SYNC_SECRET` (the same value
-// as DISPO_OPS_SYNC_SECRET in the hub's Vercel settings); never put its value in code. The sync into the hub stays
+// as DISPO_OPS_SECRET in the hub's Vercel settings); never put its value in code. The sync into the hub stays
 // off until HUB_SYNC_ENABLED is set to true (functions/.env).
 const HUB_SECRET = defineSecret("HUB_SYNC_SECRET");
 const HUB_URL = defineString("HUB_URL", { default: "https://hub.totalchb.com" });

@@ -13,7 +13,7 @@ commits.
    Started. Keep the bucket `dispo-ops.firebasestorage.app`.
 2. **Create the hub connection secret**, a long random value that you keep to yourself:
    - in DISPO OPS: `firebase functions:secrets:set HUB_SYNC_SECRET` (paste the value when asked);
-   - in the hub: Vercel, project of hub.totalchb.com, Settings, Environment Variables, add `DISPO_OPS_SYNC_SECRET`
+   - in the hub: Vercel, project of hub.totalchb.com, Settings, Environment Variables, add `DISPO_OPS_SECRET`
      with the same value (Production), then redeploy the hub.
 
    Refresh From Hub needs this. The deal sync also uses it, but stays switched off.

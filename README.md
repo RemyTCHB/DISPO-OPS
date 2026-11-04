@@ -97,7 +97,7 @@ and Vercel settings, never in the code.
   Manager clicks Refresh From Hub.
 - **Hub deal sync** (one way, built, switched off). It sends each deal as "DISPO - &lt;address&gt;" to the hub's
   `/api/dispo-ops`. To turn it on, set `HUB_SYNC_ENABLED=true` in `functions/.env` and redeploy the functions.
-- Both use the shared secret `HUB_SYNC_SECRET` (Firebase secret). The hub has the same value as `DISPO_OPS_SYNC_SECRET`.
+- Both use the shared secret `HUB_SYNC_SECRET` (Firebase secret). The hub has the same value as `DISPO_OPS_SECRET`.
 
 ---
 
