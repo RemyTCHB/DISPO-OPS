@@ -415,6 +415,10 @@ table.deals tbody tr:last-child td { border-bottom: none; }
 .pop-item a { overflow-wrap: anywhere; font-weight: 700; }
 .pop-empty { padding: 14px; text-align: center; color: var(--text-muted); font-size: 14px; }
 .pop-foot { display: flex; gap: 8px; align-items: flex-end; }
+.own-box { padding: 10px 12px; border-radius: 12px; background: var(--surface-card); border: 1px solid var(--border-default); display: flex; flex-direction: column; gap: 8px; }
+.own-box .by { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-weight: 700; flex-wrap: wrap; }
+.own-box textarea { min-height: 90px; }
+.own-box .txt { overflow-wrap: anywhere; font-size: 14px; }
 .pop-foot textarea { min-height: 44px; }
 .menu.dp-menu { width: 340px; background-color: var(--surface-card); background-image: none; gap: 0; }
 .dp-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 6px 8px 2px; }
@@ -541,7 +545,8 @@ table.deals tbody tr:last-child td { border-bottom: none; }
 .team-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border-default); }
 .team-row .grow b { display: block; font-family: var(--font-display); font-size: 15px; color: var(--text-body); }
 .team-row .grow small { font-size: 12px; color: var(--text-muted); }
-.help { max-width: 860px; }
+.help { width: 100%; }
+.help .card > * { max-width: 860px; }   /* the card spans the page like every other page; lines stay readable */
 .help h2 { font-size: 26px; font-weight: 800; margin: 8px 0 4px; }
 .help h3 { font-size: 19px; font-weight: 800; margin: 18px 0 4px; }
 .help p, .help li { font-size: 15px; line-height: 1.6; }
@@ -650,6 +655,7 @@ table.deals tbody tr:last-child td { border-bottom: none; }
 
 /* ================================================================ the hub's header standard (RemyTCHB/HUB docs/HEADER.md) */
 /* 0. page width and margins */
+html { scrollbar-gutter: stable; }   /* same width on every page: no sideways jump when a page is too short to scroll */
 .main { max-width: 1280px; padding: 36px 24px 96px; gap: 24px; }
 /* 1. header bar: left (logo, app, Live clock) · middle (page tabs) · right (bell, Active, light/dark, photo) */
 .header { transition: background 160ms var(--ease-out); }

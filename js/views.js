@@ -185,25 +185,8 @@ function phases(d) {
   return out;
 }
 
-function draftLabel(it) { return String(it.title || '').toLowerCase().includes('approved') ? 'Template' : 'Draft'; }
-const wantsDraft = it => String(it.title || '').toLowerCase().includes('draft') || it.requiresDraft;
-function featureButtons(it, key, tg, locked) {
-  let h = '';
-  const href = safeUrl(it.hyperlink);
-  if (it.requiresLink || it.hyperlink) {
-    h += href ? `<a class="mini has" href="${esc(href)}" target="_blank" rel="noopener" title="${esc(it.hyperlink)}">${icon('ext', 16)}Link</a><button type="button" class="mini" data-act="box" data-box="link:${key}" ${locked ? 'disabled' : ''} title="Edit Link">${icon('pen', 14)}</button>`
-      : `<button type="button" class="mini labelled" data-act="box" data-box="link:${key}" ${locked ? 'disabled' : ''}>${icon('link', 16)}Add Link</button>`;
-  }
-  if (wantsDraft(it)) h += `<button type="button" class="mini labelled ${it.templateText ? 'has' : ''}" data-act="box" data-box="draft:${key}">${icon('draft', 16)}${draftLabel(it)}</button>`;
-  return h;
-}
-function featureBoxes(it, key, tg, locked) {
-  let h = '';
-  if (S.boxes['link:' + key]) h += `<div class="inline-box" data-key="lb"><div class="row" style="flex-wrap:nowrap"><input class="input" id="link_${key}" value="${esc(it.hyperlink || '')}" placeholder="https://..." data-enter="saveLink" ${tg}><button type="button" class="btn sm secondary" data-act="saveLink" ${tg}>Save</button><button type="button" class="mini" data-act="clearLink" ${tg} title="Remove Link">${icon('trash', 16)}</button></div></div>`;
-  if (S.boxes['draft:' + key]) h += `<div class="inline-box" data-key="db"><textarea class="input" id="draft_${key}" data-change="saveTemplate" ${tg} ${locked ? 'readonly' : ''} placeholder="Paste text here...">${esc(it.templateText || '')}</textarea>
-    <div class="row"><small>${it.templateLastEditedBy ? `Last saved by <b>${esc(label(it.templateLastEditedBy))}</b> · ${esc(L.when(it.templateLastEditedAt))}` : 'Saves automatically when you click away'}</small>${it.templateText ? `<button type="button" class="btn sm ghost" data-act="copy" data-text="${esc(it.templateText)}">${icon('copy', 14)}Copy</button>` : ''}</div></div>`;
-  return h;
-}
+export function draftLabel(it) { return String(it.title || '').toLowerCase().includes('approved') ? 'Template' : 'Draft'; }
+export const wantsDraft = it => String(it.title || '').toLowerCase().includes('draft') || it.requiresDraft;
 // The Details button: one clipboard (notes + files count, the due date's colour) instead of four separate buttons.
 const ICON_DETAILS = '<svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg>';
 function detailsBtn(it, tg, done, sub) {
@@ -228,7 +211,6 @@ function taskCard(d, t, ti, locked) {
     t.isSOW ? '<span class="chip tag upload">CSV Upload SOW</span>' : '',
     t.isDropdown && !lockedSelect ? `<span class="chip tag deploy">${icon('branch', 12)}Path Chosen</span>` : '',
     dueTag(t, done, tg),
-    featureButtons(t, key, tg, locked),
     t.isDropdown && !lockedSelect ? `<button type="button" class="mini labelled" data-act="editPath" ${tg} ${locked ? 'disabled' : ''}>${icon('pen', 14)}Edit Path</button>` : ''
   ].join('');
   const pct = subPct(t), meta = lastChange(d, t.id);
@@ -238,7 +220,6 @@ function taskCard(d, t, ti, locked) {
       <span class="row"><button type="button" class="btn sm ghost" data-act="box" data-box="add:${key}">Cancel</button><button type="button" class="btn sm secondary" data-act="addSubtask" ${tg}>Save</button></span></div></div>`
     : `<button type="button" class="add-sub-btn" data-act="box" data-box="add:${key}" ${locked ? 'disabled' : ''}>${icon('plus', 15, 2.5)}Add Subtask</button>`;
   const expand = `<button type="button" class="mini xp ${open ? 'on' : ''}" data-act="expand" data-k="${esc(key)}" title="${open ? 'Hide' : 'Show'} subtasks" aria-expanded="${open}">${icon('down', 20, 2)}</button>`;
-  const boxes = featureBoxes(t, key, tg, locked);
   return `<article class="task ${done ? 'done' : ''}" id="task_${esc(t.id)}" data-key="t-${esc(t.id)}-${ti}">
     <div class="tcard">
       <button type="button" class="check tk-check ${t.completed ? 'on' : ''}" data-act="toggleTask" ${tg} aria-pressed="${!!t.completed}" ${locked || lockedSelect ? 'disabled' : ''} title="${lockedSelect ? 'Select an option first' : 'Mark task done'}">${t.completed ? icon('check', 16, 3) : ''}</button>
@@ -255,7 +236,7 @@ function taskCard(d, t, ti, locked) {
         ${t.isCustom ? `<button type="button" class="mini" data-act="openDeleteCustom" ${tg} ${locked ? 'disabled' : ''} title="Delete Custom Task">${icon('trash', 16)}</button>` : ''}
       </div>
     </div>
-    ${path || boxes ? `<div class="task-extra">${path}${boxes}</div>` : ''}
+    ${path ? `<div class="task-extra">${path}</div>` : ''}
     ${open ? `<div class="subs">${subs.map((s, si) => subRow(d, t, ti, s, si, locked)).join('')}${locked ? '' : addSub}</div>` : ''}</article>`;
 }
 
@@ -269,11 +250,10 @@ function subRow(d, t, ti, s, si, locked) {
   const editBox = editing ? `<div class="inline-box"><textarea class="input" id="subedit_${key}" style="min-height:52px">${esc(s.title)}</textarea>
       <div class="row"><span class="row"><label class="check-row"><input type="checkbox" id="subeditLink_${key}" ${s.requiresLink || s.hyperlink ? 'checked' : ''}>Require Link</label><label class="check-row"><input type="checkbox" id="subeditDraft_${key}" ${s.requiresDraft || s.templateText ? 'checked' : ''}>Require Draft</label></span>
       <span class="row"><button type="button" class="btn sm ghost" data-act="box" data-box="edit:${key}">Cancel</button><button type="button" class="btn sm secondary" data-act="saveSubtask" ${tg}>Save</button></span></div></div>` : '';
-  const boxes = featureBoxes(s, key, tg, locked);
   return `<div class="sub ${s.completed ? 'done' : ''}" data-key="s-${esc(s.id)}-${si}">
     <div class="sub-row">
       <button type="button" class="check ${s.completed ? 'on' : ''}" data-act="subStatus" data-v="${s.completed ? 'todo' : 'done'}" ${tg} aria-pressed="${!!s.completed}" ${locked ? 'disabled' : ''} title="Mark subtask done">${s.completed ? icon('check', 13, 3.5) : ''}</button>
-      <div class="sub-body"><span class="sub-title">${esc(s.title)}</span><span class="sub-meta">${meta ? esc(meta) : ''}${dueTag(s, s.completed, tg)}${featureButtons(s, key, tg, locked)}${sow}</span></div>
+      <div class="sub-body"><span class="sub-title">${esc(s.title)}</span><span class="sub-meta">${meta ? esc(meta) : ''}${dueTag(s, s.completed, tg)}${sow}</span></div>
       <div class="sub-tools">
         <span class="owner static glass sm" title="Subtasks belong to their task's owner">${face(t.assignee)}<span class="nm">${esc(label(t.assignee))}</span></span>
         <button type="button" class="status-pill s-${st}" data-act="menu" data-menu="subStatus" ${tg} ${locked ? 'disabled' : ''} title="Subtask status">${STAT_LABEL[st]}${icon('down', 13, 2.5)}</button>
@@ -282,7 +262,7 @@ function subRow(d, t, ti, s, si, locked) {
         ${isDefault ? '' : `<button type="button" class="mini" data-act="openRemoveSub" ${tg} ${locked ? 'disabled' : ''} title="Remove subtask">${icon('trash', 15)}</button>`}
       </div>
     </div>
-    ${editBox || boxes ? `<div class="sub-extra stack">${editBox}${boxes}</div>` : ''}</div>`;
+    ${editBox ? `<div class="sub-extra stack">${editBox}</div>` : ''}</div>`;
 }
 
 export { isOverdue, noteCount, fileCount, LOGO, pageTitle };

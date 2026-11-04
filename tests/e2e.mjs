@@ -141,16 +141,20 @@ async function main() {
     await carlos.fill('#confirmWord', 'Confirm'); await carlos.click('[data-act="removeSub"]');
     assert(await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks.length === 1), 'subtask not removed');
   });
-  await step('draft (saves on leaving the box) and link', async () => {
+  await step('draft (saves on leaving the box) and link, both in Details', async () => {
     const c = () => card('Create FB Post Draft');
-    await c().locator('[data-box^="draft:"]').click();
-    await carlos.fill('[id^="draft_ws_23"]', 'E2E draft text'); await carlos.click('#tracker-address');
+    assert(!(await c().locator('[data-box^="draft:"], [data-box^="link:"]').count()), 'Draft and Link live in Details now, not on the card');
+    await details(carlos, c(), 'notes');
+    await carlos.fill('#draft_own', 'E2E draft text'); await carlos.click('#noteText');
     const t = await until(async () => { const x = (await getDeal(W)).tasks.find(t => t.id === 'ws_23'); return x.templateText === 'E2E draft text' ? x : null; });
     assert(t && t.templateLastEditedBy === 'carlos', 'draft author should be stored as before, got ' + (t && t.templateLastEditedBy));
+    await carlos.keyboard.press('Escape'); await settle(carlos);
     const l = () => card('Format The Data');
-    await l().locator('[data-box^="link:ws_12"]').first().click();
+    await details(carlos, l(), 'files');
     await carlos.fill('#link_ws_12', 'example.com/e2e'); await carlos.press('#link_ws_12', 'Enter');
     assert(await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').hyperlink === 'example.com/e2e'), 'link not saved');
+    assert(await until(async () => (await carlos.locator('.own-box a[href="https://example.com/e2e"]').count()) === 1), 'saved link should open from Details');
+    await carlos.keyboard.press('Escape'); await settle(carlos);
   });
   await step('Inject Custom Task (borrowing weight) and delete it', async () => {
     await carlos.click('[data-act="openInject"]');

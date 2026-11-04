@@ -4,7 +4,7 @@ import { esc, attr, safeUrl, dpHtml } from './ui.js';
 import { S, deal, allDeals, label, face, myName, isManager, people, managers, sop, strategies } from './state.js';
 import * as L from './logic.js';
 import { now, myPrefix, MAX_FILE } from './store.js';
-import { noteCount, fileCount, syncPanel } from './views.js';
+import { noteCount, fileCount, syncPanel, wantsDraft, draftLabel } from './views.js';
 
 const tgAttrs = tg => tg ? attr({ 'data-tid': tg.tid, 'data-ti': tg.ti, 'data-sid': tg.sid, 'data-si': tg.si }) : '';
 const itemAt = (d, tg) => { try { return !tg ? d : tg.sid ? L.findSub(d, tg).s : L.findTask(d, tg); } catch (e) { return null; } };
@@ -92,20 +92,23 @@ function popHtml(m) {
     const entries = [];
     sources.forEach(src => {
       (src.it.notes || []).forEach(n => entries.push({ kind: 'note', n, src }));
-      if (src.it.templateText) entries.push({ kind: 'draft', src });
+      if (src.it.templateText && !(m.tg && src.tag === null)) entries.push({ kind: 'draft', src });
     });
     entries.sort((a, b) => (a.kind === 'note' ? a.n.at : a.src.it.templateLastEditedAt || 0) - (b.kind === 'note' ? b.n.at : b.src.it.templateLastEditedAt || 0));
     const row = e => e.kind === 'note'
       ? `<div class="pop-item"><div class="by">${esc(e.n.by)} · ${esc(L.when(e.n.at))}${e.src.tag ? ` <span class="chip">${esc(e.src.tag)}</span>` : ''}<span class="grow"></span>${e.n.by === myName() && !locked ? `<button type="button" class="mini" data-act="deleteNote" data-nid="${esc(e.n.id)}" ${tgAttrs(e.src.tg)} title="Delete note">${icon('trash', 14)}</button>` : ''}</div><div class="txt">${esc(e.n.text)}</div></div>`
       : `<div class="pop-item"><div class="by"><span class="chip gold">${String(e.src.it.title || '').toLowerCase().includes('approved') ? 'Template' : 'Draft'}</span>${e.src.it.templateLastEditedBy ? `${esc(label(e.src.it.templateLastEditedBy))} · ${esc(L.when(e.src.it.templateLastEditedAt))}` : ''}${e.src.tag ? ` <span class="chip">${esc(e.src.tag)}</span>` : ''}<span class="grow"></span><button type="button" class="mini" data-act="copy" data-text="${esc(e.src.it.templateText)}" title="Copy">${icon('copy', 14)}</button></div><div class="txt">${esc(e.src.it.templateText)}</div></div>`;
     const sw = m.tg && !m.tg.sid && (it.subtasks || []).length ? `<label class="check-row" data-key="sw" style="font-size:13px"><button type="button" class="switch" role="switch" aria-checked="${!!m.withSubs}" data-act="popSubs"></button>Include Subtask Notes</label>` : '';
-    return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Notes">${head('Notes')}${sw}<div class="pop-list" data-key="list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No notes yet.</div>'}</div>
+    // the task's own draft (it used to open from a Draft button on the card): edit it here, saved on leaving the box
+    const own = m.tg && (wantsDraft(it) || it.templateText) ? `<div class="own-box" data-key="own-draft"><div class="by"><span class="chip gold">${draftLabel(it)}</span>${it.templateLastEditedBy ? `${esc(label(it.templateLastEditedBy))} · ${esc(L.when(it.templateLastEditedAt))}` : '<span class="muted">Saves when you click away</span>'}<span class="grow"></span>${it.templateText ? `<button type="button" class="mini" data-act="copy" data-text="${esc(it.templateText)}" title="Copy">${icon('copy', 14)}</button>` : ''}</div>
+      <textarea class="input" id="draft_own" data-change="saveTemplate" ${tgAttrs(m.tg)} ${locked ? 'readonly' : ''} placeholder="Paste text here...">${esc(it.templateText || '')}</textarea></div>` : '';
+    return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Notes">${head('Notes')}${own}${sw}<div class="pop-list" data-key="list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No notes yet.</div>'}</div>
       ${locked ? '' : `<div class="pop-foot" data-key="foot"><textarea class="input" id="noteText" placeholder="Write a note..." rows="2"></textarea><button type="button" class="btn sm primary" data-act="addNote" ${tgAttrs(m.tg)}>Add</button></div>`}</div>`;
   }
   // files & links
   const entries = [];
   sources.forEach(src => {
-    if (src.it.hyperlink) entries.push({ kind: 'field', src, at: 0 });
+    if (src.it.hyperlink && !(m.tg && src.tag === null)) entries.push({ kind: 'field', src, at: 0 });
     (src.it.files || []).forEach(f => entries.push({ kind: 'file', f, src, at: f.at }));
   });
   const row = e => {
@@ -118,7 +121,11 @@ function popHtml(m) {
   const add = locked ? '' : `<div class="seg small" data-key="mode" role="group"><button type="button" data-act="popMode" data-v="file" aria-pressed="${mode === 'file'}">${icon('upload', 15)}Upload Files</button><button type="button" data-act="popMode" data-v="link" aria-pressed="${mode === 'link'}">${icon('link', 15)}Add Link</button></div>
     ${mode === 'file' ? `<label class="drop" data-key="add-file">${m.uploading ? '<span class="spin"></span><b>Uploading…</b>' : `${icon('upload', 22)}<b>Choose Files</b><small class="muted">Up to ${MAX_FILE / 1048576} MB each</small>`}<input type="file" multiple class="sr" data-change="uploadFiles" ${tgAttrs(m.tg)}></label>`
       : `<div class="stack" data-key="add-link" style="gap:8px"><input class="input" id="linkName" placeholder="Name (optional)"><input class="input" id="linkUrl" placeholder="https://..." data-enter="addLinkFile" ${tgAttrs(m.tg)}><button type="button" class="btn sm primary" data-act="addLinkFile" ${tgAttrs(m.tg)}>Add Link</button></div>`}`;
-  return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Files and links">${head('Files & Links')}${add}<div class="pop-list" data-key="list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No files or links yet.</div>'}</div></div>`;
+  // the task's own link (it used to open from a Link button on the card)
+  const lk = m.tg ? (m.tg.sid ? `${m.tg.tid}_${m.tg.sid}` : m.tg.tid) : '', ownHref = safeUrl(it.hyperlink);
+  const own = m.tg && (it.requiresLink || it.hyperlink) ? `<div class="own-box" data-key="own-link"><div class="by"><span class="chip">${icon('link', 12)}${m.tg.sid ? 'Subtask' : 'Task'} Link</span>${it.requiresLink && !it.hyperlink ? '<span class="muted">This step needs a link</span>' : ''}<span class="grow"></span>${ownHref ? `<a class="mini labelled" href="${esc(ownHref)}" target="_blank" rel="noopener" title="${esc(it.hyperlink)}">${icon('ext', 14)}Open</a>` : ''}</div>
+    ${locked ? (it.hyperlink ? `<span class="txt">${esc(it.hyperlink)}</span>` : '') : `<div class="row" style="flex-wrap:nowrap"><input class="input" id="link_${esc(lk)}" value="${esc(it.hyperlink || '')}" placeholder="https://..." data-enter="saveLink" ${tgAttrs(m.tg)}><button type="button" class="btn sm secondary" data-act="saveLink" ${tgAttrs(m.tg)}>Save</button>${it.hyperlink ? `<button type="button" class="mini" data-act="clearLink" ${tgAttrs(m.tg)} title="Remove Link">${icon('trash', 16)}</button>` : ''}</div>`}</div>` : '';
+  return `<div class="menu pop" data-key="menu" data-morph role="dialog" aria-label="Files and links">${head('Files & Links')}${own}${add}<div class="pop-list" data-key="list">${entries.length ? entries.map(row).join('') : '<div class="pop-empty">No files or links yet.</div>'}</div></div>`;
 }
 
 // ---------------------------------------------------------------- chat (stored as before: comments, readBy, pins)

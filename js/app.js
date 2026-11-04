@@ -268,7 +268,7 @@ const A = {
     change('editSubtask', [tg, { title, link: $('subeditLink_' + key).checked, draft: $('subeditDraft_' + key).checked }]); S.boxes['edit:' + key] = false; },
   openRemoveSub: el => { S.modal = { kind: 'removeSub', tg: tgOf(el), ok: false }; render(); setTimeout(() => $('confirmWord') && $('confirmWord').focus(), 30); },
   removeSub: () => { const tg = S.modal.tg; S.modal = null; S.boxes[`edit:${tg.tid}_${tg.sid}`] = false; change('removeSubtask', [tg]); },
-  saveLink: el => { const tg = tgOf(el), key = tg.sid ? `${tg.tid}_${tg.sid}` : tg.tid; change('saveLink', [tg, $('link_' + key).value]); S.boxes['link:' + key] = false; render(); },
+  saveLink: el => { const tg = tgOf(el), key = tg.sid ? `${tg.tid}_${tg.sid}` : tg.tid; change('saveLink', [tg, $('link_' + key).value]); S.boxes['link:' + key] = false; $('link_' + key).blur(); render(); },
   clearLink: el => { const tg = tgOf(el), key = tg.sid ? `${tg.tid}_${tg.sid}` : tg.tid; change('clearLink', [tg]); S.boxes['link:' + key] = false; render(); },
   copy: (el) => { const t = el.dataset.text || ''; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(() => { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }); toast('Copied'); },
   openDeleteCustom: el => { const tg = tgOf(el); confirmBox('Confirm Removal', 'Permanently delete this custom task? Its borrowed weight goes back to the tasks it came from.', 'Delete Task', () => change('deleteCustomTask', [tg])); },
