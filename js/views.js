@@ -18,7 +18,7 @@ const fileCount = it => (it.files || []).length + (it.hyperlink ? 1 : 0);
 export const pctClass = p => p === 100 ? 'done' : '';
 
 // ---------------------------------------------------------------- header (the hub's header standard, docs/HEADER.md)
-// Left: logo, DISPO OPS and the Live clock (clock + save status in one pill). Middle: the page tabs. Right: bell,
+// Left: logo and the Live clock (clock + save status in one pill). Middle: the page tabs. Right: bell,
 // Active, light/dark (icons only), photo. Phones: logo, clock (time only), bell and photo; the rest is in the photo menu.
 const SYNC = { ready: 'Live', saving: 'Saving…', unsaved: 'Not Saved', offline: 'Offline' };
 export function header(st = { state: 'ready' }) {
@@ -28,7 +28,7 @@ export function header(st = { state: 'ready' }) {
   const imp = S.imp ? `<div class="imp-bar" role="status"><span>Viewing DISPO OPS as ${esc(myName(true))} (${esc(u.email)})</span><button type="button" data-act="backToRemy" ${S.backBusy ? 'disabled' : ''}>${S.backBusy ? 'Switching Back…' : 'Back To Remy'}</button></div>` : '';
   const live = `<button type="button" class="live ${st.state}" data-act="menu" data-menu="sync" aria-haspopup="true" aria-label="Save status: ${SYNC[st.state]}. Show details" title="${esc({ ready: 'Every change is saved for the whole team', saving: 'Saving your changes for the whole team…', unsaved: st.error || 'Not saved', offline: 'No connection' }[st.state])}"><i class="ld"></i><span class="lt"><span class="cd" id="clockD"></span><span id="clockT"></span></span>${st.state === 'ready' ? '<span class="sheen" aria-hidden="true"></span>' : ''}</button>`;
   return `${imp}<div class="header-row">
-    <div class="hg hl"><button type="button" class="brand" data-act="tab" data-tab="dashboard" aria-label="Master Dashboard">${LOGO}<span class="app">DISPO <span>OPS</span></span></button>${u ? live : ''}</div>
+    <div class="hg hl"><button type="button" class="brand" data-act="tab" data-tab="dashboard" aria-label="Master Dashboard">${LOGO}</button>${u ? live : ''}</div>
     ${u ? `<div class="hm"><nav class="seg tabs" aria-label="Pages">${tab('dashboard', 'Master Dashboard')}${tab('tracker', 'Active Deal Tracker')}${tab('sop', 'SOP Reference')}</nav></div>` : ''}
     <div class="hg hr">
       ${u ? `<button type="button" class="icon-btn glass" data-act="menu" data-menu="notifs" title="Notifications" aria-label="Notifications, ${unread} unread">${icon('bell', 19)}${unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : ''}</button>
@@ -69,7 +69,7 @@ export function dashboard() {
   const sorts = { edited_desc: 'Recently Edited', edited_asc: 'Oldest Edited', started_desc: 'Newest Added', started_asc: 'Oldest Added', due_asc: 'Due Soonest' };
   const views = ['open', 'closed', 'cancelled'].map(k => `<button type="button" data-act="view" data-v="${k}" aria-pressed="${S.view.status === k}">${L.STATUS[k]} <span class="n">${counts[k]}</span></button>`).join('');
   const rows = list.map(d => dealRow(d)).join(''), cards = list.map(d => dealCard(d)).join('');
-  return `${pageTitle('Live', 'Pipeline', 'title-dash')}
+  return `${pageTitle('DISPO', 'OPS', 'title-dash')}
     <section class="tabs-line" data-key="tabsline-${S.view.status}-${counts.open}-${counts.closed}-${counts.cancelled}-${overdue}">
       <div class="seg" role="group" aria-label="Deal status">${views}</div>
       <div class="stats"><div class="stat"><b>${counts.open}</b><span>Open Deals</span></div><div class="stat"><b class="${overdue ? 'red' : ''}">${overdue}</b><span>Overdue Items</span></div></div>
