@@ -264,8 +264,9 @@ async function main() {
   await step('notification settings save', async () => {
     await moe.click('[data-menu="user"]'); await moe.click('[data-act="openPrefs"]'); await moe.waitForSelector('[data-act="prefToggle"]');
     await moe.click('[data-act="prefToggle"][data-k="daily_brief"]'); await moe.click('[data-act="savePrefs"]');
-    const s = await until(async () => { const x = await db().collection(`${P}/user_preferences`).where('email', '==', 'moe@totalchb.com').get(); return x.empty ? null : x.docs[0].data(); });
-    assert(s && s.daily_brief === false, 'preference not saved');
+    const s = await until(async () => { const x = await db().collection(`${P}/user_preferences`).where('email', '==', 'moe@totalchb.com').get(); return !x.empty && x.docs[0].data().daily_brief === false ? x.docs[0].data() : null; });
+    if (!(s && s.daily_brief === false)) { const all = (await db().collection(`${P}/user_preferences`).get()).docs.map(d => d.data().email + ':' + d.data().daily_brief);
+      throw new Error('preference not saved: ' + all.join(', ') + ' / modal ' + await moe.evaluate(() => JSON.stringify(window.__dispo.S.modal && { kind: window.__dispo.S.modal.kind, db: window.__dispo.S.modal.prefs && window.__dispo.S.modal.prefs.daily_brief, saved: window.__dispo.S.modal.saved }))); }
   });
   await step('only Carlos and Systems see Edit SOP', async () => {
     await moe.click('.seg.tabs [data-tab="sop"]'); await settle(moe); assert(await moe.locator('[data-act="sopEdit"]').count() === 0, 'Moe should not see Edit SOP');

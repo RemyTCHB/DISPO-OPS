@@ -62,7 +62,7 @@ node --test tests/unit/*.test.mjs
 ```
 
 ```bash
-tests/node_modules/.bin/firebase emulators:exec --project demo-dispo-ops "node --test tests/emu/ && node tests/e2e.mjs && node tests/scenario.mjs new && node tests/compare.mjs"
+tests/node_modules/.bin/firebase emulators:exec --project demo-dispo-ops "node --test tests/emu/*.test.mjs && node tests/e2e.mjs && node tests/scenario.mjs new && node tests/compare.mjs"
 ```
 
 ```bash
