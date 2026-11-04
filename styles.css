@@ -669,7 +669,8 @@ body.slim .header-row { padding-top: 6px; padding-bottom: 6px; }
 .brand .app { border-left-width: 2px; }
 /* DISPO's middle holds three page tabs (wider than the hub's company switch), so it drops to its own centred line
    below 1500px instead of the hub's 1240px */
-@media (max-width: 1499px) and (min-width: 640px) { .hm { order: 3; flex: 1 1 100%; } }
+/* the header row is capped at 1280px, and DISPO's three tabs plus the clock and buttons need ~1250px: tabs get their own centred line on every desktop width */
+@media (min-width: 640px) { .hm { order: 3; flex: 1 1 100%; } }
 .hm .seg.tabs { display: flex; }
 .hm .seg.tabs button { padding: 9px 18px; font-size: 14px; letter-spacing: 0.04em; text-transform: none; }
 .hm .seg.tabs button[aria-pressed='true'] { background: var(--tchb-indigo-700); color: #fff; box-shadow: var(--shadow-button); }
