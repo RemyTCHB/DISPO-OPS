@@ -10,7 +10,7 @@ Click **Sign In With Google** and use your @totalchb.com account. Other accounts
 
 - **Light / Dark** switches the look; your choice is remembered on that device.
 - **Active** shows who is online now, on phone or desktop.
-- The three tabs: **Master Dashboard**, **Active Deal Tracker**, **SOP Reference**. On a phone they are in the bar at the bottom, with **Chat**.
+- The two tabs: **Master Dashboard** and **Active Deal Tracker**. **SOP Reference** is in the menu under your photo. On a phone all three are in the bar at the bottom, with **Chat**.
 - The bell opens your **Notifications**; your photo opens **Notification Settings**, **Team**, **Help** and **Sign Out**.
 - Under the title, the badge says **Live** when everything is saved, **Saving…** while a change is on its way, and **Not Saved · Retry** if a change could not be saved (click it to try again). The clock is Eastern time.
 

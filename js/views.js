@@ -29,7 +29,7 @@ export function header(st = { state: 'ready' }) {
   const live = `<button type="button" class="live ${st.state}" data-act="menu" data-menu="sync" aria-haspopup="true" aria-label="Save status: ${SYNC[st.state]}. Show details" title="${esc({ ready: 'Every change is saved for the whole team', saving: 'Saving your changes for the whole team…', unsaved: st.error || 'Not saved', offline: 'No connection' }[st.state])}"><i class="ld"></i><span class="lt"><span class="cd" id="clockD"></span><span id="clockT"></span></span>${st.state === 'ready' ? '<span class="sheen" aria-hidden="true"></span>' : ''}</button>`;
   return `${imp}<div class="header-row">
     <div class="hg hl"><button type="button" class="brand" data-act="tab" data-tab="dashboard" aria-label="Master Dashboard">${LOGO}</button>${u ? live : ''}</div>
-    ${u ? `<div class="hm"><nav class="seg tabs" aria-label="Pages">${tab('dashboard', 'Master Dashboard')}${tab('tracker', 'Active Deal Tracker')}${tab('sop', 'SOP Reference')}</nav></div>` : ''}
+    ${u ? `<div class="hm"><nav class="seg tabs" aria-label="Pages">${tab('dashboard', 'Master Dashboard')}${tab('tracker', 'Active Deal Tracker')}</nav></div>` : ''}
     <div class="hg hr">
       ${u ? `<button type="button" class="icon-btn glass" data-act="menu" data-menu="notifs" title="Notifications" aria-label="Notifications, ${unread} unread">${icon('bell', 19)}${unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : ''}</button>
       <button type="button" class="active-pill glass dsk" data-act="menu" data-menu="active" title="Who's online now"><span class="dot"></span>Active<b>${S.online.length || 1}</b></button>` : ''}

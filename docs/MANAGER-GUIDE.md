@@ -14,7 +14,7 @@ Names, photos, roles and departments come from the Universal Team Hub. Open **Te
 
 ## Editing The SOP
 
-1. Open **SOP Reference** and click **Edit SOP**.
+1. Open **SOP Reference** (the menu under your photo) and click **Edit SOP**.
 2. Pick the strategy. Rename phases and groups in their headers; add a phase, a group or a task with the **+** buttons.
 3. For each task set the title, the default owner, the weight, whether it needs a Draft or a Link, and its default subtasks (one per line). **Make It A Path Choice** turns a task into a choice of paths, each with its own owner.
 4. Use the arrows to reorder tasks inside a group, and the bin to remove a task.

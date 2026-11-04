@@ -14,7 +14,7 @@ const USER = `
 <ul>
   <li><b>Light / Dark</b> switches the look; your choice is remembered on that device.</li>
   <li><b>Active</b> shows who is online now, on phone or desktop.</li>
-  <li>The three tabs: <b>Master Dashboard</b>, <b>Active Deal Tracker</b>, <b>SOP Reference</b>. On a phone they are in the bar at the bottom, with <b>Chat</b>.</li>
+  <li>The two tabs: <b>Master Dashboard</b> and <b>Active Deal Tracker</b>. <b>SOP Reference</b> is in the menu under your photo. On a phone all three are in the bar at the bottom, with <b>Chat</b>.</li>
   <li>The bell opens your <b>Notifications</b>; your photo opens <b>Notification Settings</b>, <b>Team</b>, <b>Help</b> and <b>Sign Out</b>.</li>
   <li>Under the title, the badge says <b>Live</b> when everything is saved, <b>Saving…</b> while a change is on its way, and <b>Not Saved · Retry</b> if a change could not be saved (click it to try again). The clock is Eastern time.</li>
 </ul>
@@ -83,7 +83,7 @@ const MANAGER = `
 
 <h3>Editing The SOP</h3>
 <ol>
-  <li>Open <b>SOP Reference</b> and click <b>Edit SOP</b>.</li>
+  <li>Open <b>SOP Reference</b> (the menu under your photo) and click <b>Edit SOP</b>.</li>
   <li>Pick the strategy. Rename phases and groups in their headers; add a phase, a group or a task with the <b>+</b> buttons.</li>
   <li>For each task set the title, the default owner, the weight, whether it needs a Draft or a Link, and its default subtasks (one per line). <b>Make It A Path Choice</b> turns a task into a choice of paths, each with its own owner.</li>
   <li>Use the arrows to reorder tasks inside a group, and the bin to remove a task.</li>

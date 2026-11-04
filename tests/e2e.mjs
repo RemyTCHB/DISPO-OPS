@@ -275,7 +275,7 @@ async function main() {
       throw new Error('preference not saved: ' + all.join(', ') + ' / modal ' + await moe.evaluate(() => JSON.stringify(window.__dispo.S.modal && { kind: window.__dispo.S.modal.kind, db: window.__dispo.S.modal.prefs && window.__dispo.S.modal.prefs.daily_brief, saved: window.__dispo.S.modal.saved }))); }
   });
   await step('only Carlos and Systems see Edit SOP', async () => {
-    await moe.click('.seg.tabs [data-tab="sop"]'); await settle(moe); assert(await moe.locator('[data-act="sopEdit"]').count() === 0, 'Moe should not see Edit SOP');
+    await moe.click('.header [data-menu="user"]'); await moe.click('.menu [data-tab="sop"]'); await settle(moe); assert(await moe.locator('[data-act="sopEdit"]').count() === 0, 'Moe should not see Edit SOP');
   });
   await step('mark a deal Closed: read-only, listed under Closed, no alerts; then Reopen', async () => {
     await openDeal(carlos, '500 Example Blvd');
@@ -293,7 +293,7 @@ async function main() {
     assert(await until(async () => !(await getDeal('500 Example Blvd')).status), 'reopen failed');
   });
   await step('SOP editor: total must be 100%, then save; new deals use it', async () => {
-    await carlos.click('.seg.tabs [data-tab="sop"]'); await carlos.click('[data-act="sopEdit"]');
+    await carlos.click('.header [data-menu="user"]'); await carlos.click('.menu [data-tab="sop"]'); await carlos.click('[data-act="sopEdit"]');
     await carlos.click('[data-act="sopEditStrategy"][data-v="Creative"]');
     const w = carlos.locator('[data-k="weight"]').first(); await w.fill('25'); await w.press('Tab');
     await carlos.waitForSelector('.meter.bad'); assert(await carlos.locator('[data-act="sopSave"]').isDisabled(), 'Save should be blocked');

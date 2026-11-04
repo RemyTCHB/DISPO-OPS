@@ -16,7 +16,7 @@ export function menuHtml() {
   if (m.kind === 'choose') return `<div class="menu" data-key="menu" role="menu">${m.options.map(o => o.header ? `<div class="label">${esc(o.header)}</div>`
     : o.hr ? '<hr>' : `<button type="button" class="mi" role="menuitem" data-act="choose" data-i="${o.i}" aria-selected="${!!o.selected}">${o.face || ''}<span class="grow">${esc(o.label)}</span>${o.hint ? `<small class="muted">${esc(o.hint)}</small>` : ''}${o.selected ? '<span class="tick"></span>' : ''}</button>`).join('')}</div>`;
   if (m.kind === 'user') {
-    // The photo menu (header standard, section 4): you, then My Settings, Team Members (managers), Help & Guides, Sign Out.
+    // The photo menu (header standard, section 4): you, then My Settings, Team Members (managers), SOP Reference, Help & Guides, Sign Out.
     // On phones Active and light/dark live here too: a Light / Dark switch at the top and Who's Online.
     const u = S.user, dark = document.documentElement.dataset.theme === 'dark', me = L.storedNameFor(u.email);
     const ps = people(), rec = ps[u.email.toLowerCase()] || {}, mgr = isManager();
@@ -28,6 +28,7 @@ export function menuHtml() {
       ${phone ? `<button type="button" class="mi" data-act="menu" data-menu="active">${icon('users', 16)}<span class="grow">Who's Online</span><small class="muted">${S.online.length || 1}</small></button>` : ''}
       <button type="button" class="mi" data-act="openPrefs">${icon('gear', 16)}My Settings</button>
       ${mgr ? `<button type="button" class="mi" data-act="openTeam">${icon('users', 16)}Team Members</button>` : ''}
+      <button type="button" class="mi" data-act="tab" data-tab="sop">${icon('book', 16)}SOP Reference</button>
       <button type="button" class="mi" data-act="tab" data-tab="help">${icon('help', 16)}Help & Guides</button>
       <button type="button" class="mi" data-act="askSignOut">${icon('out', 16)}Sign Out</button></div>`;
   }
