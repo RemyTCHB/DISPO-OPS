@@ -628,3 +628,23 @@ table.deals tbody tr:last-child td { border-bottom: none; }
 .menu.dp-menu { max-height: min(640px, calc(100vh - 16px)); }
 /* toasts never block what is under them (they go away on their own) */
 .toast { pointer-events: none; }
+
+/* the hub's aurora background (js/aurora.js): three glows the graphics card slides around */
+:root { --au0: 16,150,72; --au1: 77,69,138; --au2: 189,34,57; --au0a: 0.32; --au1a: 0.27; --au2a: 0.27; --au-blend: normal; }
+:root[data-theme='dark'] { --au0: 79,217,138; --au1: 143,135,221; --au2: 239,90,111; --au0a: 0.3; --au1a: 0.3; --au2a: 0.3; --au-blend: plus-lighter; }
+.aurora { overflow: hidden; contain: strict; }
+.glow { position: absolute; left: 0; top: 0; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  will-change: transform; mix-blend-mode: var(--au-blend); --d: min(760px, max(400px, 88vmax)); }
+.glow b, .glow i { display: block; width: 100%; height: 100%; }
+.glow i { border-radius: 50%; }
+.g0 { --d: min(646px, max(340px, 75vmax)); transition: transform 2.4s cubic-bezier(0.2, 0.6, 0.3, 1); }
+.g0 i { background: radial-gradient(closest-side, rgba(var(--au0), var(--au0a)), rgba(var(--au0), 0)); }
+.g1, .g2 { left: 50%; top: 50%; }
+.g1 { animation: au-x 92s ease-in-out -30s infinite alternate; }
+.g1 b { animation: au-y 71s ease-in-out -12s infinite alternate; }
+.g1 i { background: radial-gradient(closest-side, rgba(var(--au1), var(--au1a)), rgba(var(--au1), 0)); }
+.g2 { animation: au-x 74s ease-in-out -50s infinite alternate-reverse; }
+.g2 b { animation: au-y 57s ease-in-out -20s infinite alternate-reverse; }
+.g2 i { background: radial-gradient(closest-side, rgba(var(--au2), var(--au2a)), rgba(var(--au2), 0)); }
+@keyframes au-x { from { transform: translateX(-38vw); } to { transform: translateX(38vw); } }
+@keyframes au-y { from { transform: translateY(-34vh); } to { transform: translateY(34vh); } }
