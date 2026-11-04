@@ -61,7 +61,8 @@ export function face(stored, cls = '') {
   return `<span class="face ${cls}">${esc(initials(name))}${p && p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy">` : ''}</span>`;
 }
 export const nameOfEmail = email => { const p = people()[String(email || '').toLowerCase()]; return (p && p.name) || String(email || '').split('@')[0]; };
-export const myName = () => S.user ? nameOfEmail(S.user.email) : 'Agent';
+// Signed in as someone else (Sign In As): changes are recorded as "<their name> (via <Remy's name>)", like the hub.
+export const myName = (plain = false) => { const n = S.user ? nameOfEmail(S.user.email) : 'Agent'; return S.imp && !plain ? n + ' (via ' + nameOfEmail(S.imp) + ')' : n; };
 export const isManager = () => !!S.user && managers().includes(S.user.email.toLowerCase());
 export const canEditSop = () => !!S.user && SOP_EDITORS.includes(S.user.email.toLowerCase());
 

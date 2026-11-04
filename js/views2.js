@@ -4,7 +4,7 @@ import { esc, attr, safeUrl, dpHtml } from './ui.js';
 import { S, deal, allDeals, label, face, myName, isManager, people, managers, sop, strategies } from './state.js';
 import * as L from './logic.js';
 import { now, myPrefix, MAX_FILE } from './store.js';
-import { noteCount } from './views.js';
+import { noteCount, fileCount, syncPanel } from './views.js';
 
 const tgAttrs = tg => tg ? attr({ 'data-tid': tg.tid, 'data-ti': tg.ti, 'data-sid': tg.sid, 'data-si': tg.si }) : '';
 const itemAt = (d, tg) => { try { return !tg ? d : tg.sid ? L.findSub(d, tg).s : L.findTask(d, tg); } catch (e) { return null; } };
@@ -16,13 +16,22 @@ export function menuHtml() {
   if (m.kind === 'choose') return `<div class="menu" data-key="menu" role="menu">${m.options.map(o => o.header ? `<div class="label">${esc(o.header)}</div>`
     : o.hr ? '<hr>' : `<button type="button" class="mi" role="menuitem" data-act="choose" data-i="${o.i}" aria-selected="${!!o.selected}">${o.face || ''}<span class="grow">${esc(o.label)}</span>${o.hint ? `<small class="muted">${esc(o.hint)}</small>` : ''}${o.selected ? '<span class="tick"></span>' : ''}</button>`).join('')}</div>`;
   if (m.kind === 'user') {
-    const u = S.user;
-    return `<div class="menu" data-key="menu" role="menu"><div class="label">${esc(myName())}</div><div style="padding:0 12px 6px;font-size:12px" class="muted">${esc(u.email)}</div><hr>
-      <button type="button" class="mi" data-act="openPrefs">${icon('bell', 16)}Notification Settings</button>
-      <button type="button" class="mi" data-act="openTeam">${icon('users', 16)}Team</button>
-      <button type="button" class="mi" data-act="tab" data-tab="help">${icon('help', 16)}Help & Guides</button><hr>
-      <button type="button" class="mi" data-act="signOut">${icon('out', 16)}Sign Out</button></div>`;
+    // The photo menu (header standard, section 4): you, then My Settings, Team Members (managers), Help & Guides, Sign Out.
+    // On phones Active and light/dark live here too: a Light / Dark switch at the top and Who's Online.
+    const u = S.user, dark = document.documentElement.dataset.theme === 'dark', me = L.storedNameFor(u.email);
+    const ps = people(), rec = ps[u.email.toLowerCase()] || {}, mgr = isManager();
+    const role = mgr ? 'Manager' : rec.role === 'lead' ? 'Team Leader' + (rec.dept ? ' · ' + rec.dept : '') : rec.dept ? 'Member · ' + rec.dept : 'Member';
+    const phone = window.innerWidth < 640;
+    return `<div class="menu acct" data-key="menu" role="menu">
+      ${phone ? `<div class="seg theme-words" role="group" aria-label="Theme"><button type="button" data-act="theme" data-v="light" aria-pressed="${!dark}">${icon('sun', 15)}Light</button><button type="button" data-act="theme" data-v="dark" aria-pressed="${dark}">${icon('moon', 15)}Dark</button></div>` : ''}
+      <div class="acct-me">${face(me, 'xl')}<div class="grow"><b>${esc(myName())}</b><small>${esc(u.email)}</small><span class="role">${esc(role)}</span></div></div><hr>
+      ${phone ? `<button type="button" class="mi" data-act="menu" data-menu="active">${icon('users', 16)}<span class="grow">Who's Online</span><small class="muted">${S.online.length || 1}</small></button>` : ''}
+      <button type="button" class="mi" data-act="openPrefs">${icon('gear', 16)}My Settings</button>
+      ${mgr ? `<button type="button" class="mi" data-act="openTeam">${icon('users', 16)}Team Members</button>` : ''}
+      <button type="button" class="mi" data-act="tab" data-tab="help">${icon('help', 16)}Help & Guides</button>
+      <button type="button" class="mi" data-act="askSignOut">${icon('out', 16)}Sign Out</button></div>`;
   }
+  if (m.kind === 'sync') return syncPanel(S.syncSt || { state: 'ready' }, S.lastSaved);
   if (m.kind === 'active') {
     const list = S.online.length ? S.online : [{ email: S.user.email, sessions: { x: { lastActive: Date.now(), type: 'Desktop' } } }];
     return `<div class="menu" data-key="menu" role="menu"><div class="label">Personnel Online · ${list.length}</div>${list.map(u => {
@@ -32,7 +41,16 @@ export function menuHtml() {
     }).join('')}</div>`;
   }
   if (m.kind === 'notifs') return notifsHtml();
-  if (m.kind === 'pop') return popHtml(m);
+  if (m.kind === 'pop') {
+    const html = popHtml(m); if (!html || !m.details) return html;
+    // Details: one panel with Due · Notes · Activity · Files at the top (subtasks: Due · Notes · Files)
+    const d = deal(m.dealId), it = itemAt(d, m.tg); if (!it) return html;
+    const parts = m.tg.sid ? ['due', 'notes', 'files'] : ['due', 'notes', 'activity', 'files'];
+    const n = { due: it.due ? 1 : 0, notes: noteCount(it), files: fileCount(it), activity: (d.log || []).filter(e => m.tg.sid ? e.sid === m.tg.sid : e.tid === m.tg.tid).length };
+    const seg = `<div class="seg small det-parts" data-key="parts" role="group" aria-label="Details">${parts.map(p => `<button type="button" data-act="detailsPart" data-v="${p}" aria-pressed="${m.pop === p}">${{ due: 'Due', notes: 'Notes', activity: 'Activity', files: 'Files' }[p]}${n[p] && p !== 'due' ? ` <span class="n">${n[p]}</span>` : ''}</button>`).join('')}</div>`;
+    const i = html.indexOf('>') + 1;
+    return html.slice(0, i).replace('class="menu', 'class="menu det') + seg + html.slice(i);
+  }
   return '';
 }
 
@@ -201,10 +219,10 @@ const PREFS = [['comments', 'Offline Comment Alerts', 'Alerts for new unread pro
   ['task_turns', 'Task Turn Alerts', 'As soon as the next workflow step is yours.'], ['daily_brief', '10 AM Daily Briefing', 'A morning summary of your pending tasks.'],
   ['reminders', 'Overdue Reminders', 'Recurring nudges for tasks waiting on you, and for due dates that have passed.']];
 function prefsHtml(m, wrap) {
-  if (!m.prefs) return wrap('Notification Settings', '<div class="row"><span class="spin"></span>Loading…</div>', '<button type="button" class="btn ghost" data-act="closeModal">Close</button>');
+  if (!m.prefs) return wrap('My Settings', '<div class="row"><span class="spin"></span>Loading…</div>', '<button type="button" class="btn ghost" data-act="closeModal">Close</button>');
   const p = m.prefs, iv = { 2: 'Every 2 Hours', 4: 'Every 4 Hours', 8: 'Every 8 Hours', 24: 'Once A Day (24 Hours)' };
-  return wrap('Notification Settings', `<div class="row"><button type="button" class="btn ${m.push === 'ok' ? 'outline' : 'secondary'} grow" data-act="enablePush">${icon('bell', 16)}${{ ok: 'Device Linked Successfully!', fail: 'Setup Failed', busy: 'Authorizing…', wiped: 'Wiped! Click To Link This Device' }[m.push] || 'Enable Push On This Device'}</button>
-      <button type="button" class="btn outline" data-act="resetPrefs" title="Reset Settings To Default">${icon('rotate', 16)}Defaults</button><button type="button" class="btn outline" data-act="wipeDevices" title="Wipe Old Devices">${icon('phone', 16)}Wipe Devices</button></div>
+  return wrap('My Settings', `<h3 class="sec-h">Notification Settings</h3>${S.imp ? '<p class="note">Push devices can\'t be changed while you are signed in as someone else.</p>' : ''}<div class="row"><button type="button" class="btn ${m.push === 'ok' ? 'outline' : 'secondary'} grow" data-act="enablePush" ${S.imp ? 'disabled' : ''}>${icon('bell', 16)}${{ ok: 'Device Linked Successfully!', fail: 'Setup Failed', busy: 'Authorizing…', wiped: 'Wiped! Click To Link This Device' }[m.push] || 'Enable Push On This Device'}</button>
+      <button type="button" class="btn outline" data-act="resetPrefs" title="Reset Settings To Default">${icon('rotate', 16)}Defaults</button><button type="button" class="btn outline" data-act="wipeDevices" title="Wipe Old Devices" ${S.imp ? 'disabled' : ''}>${icon('phone', 16)}Wipe Devices</button></div>
     <div>${PREFS.map(([k, t, s]) => `<div class="pref"><div class="grow"><b>${t}</b><small>${s}</small></div><button type="button" class="switch" role="switch" aria-checked="${!!p[k]}" data-act="prefToggle" data-k="${k}" aria-label="${t}"></button></div>`).join('')}
       <div class="pref"><div class="grow"><b>Reminder Interval</b><small>How often Overdue Reminders repeat.</small></div><button type="button" class="pick" style="width:auto" data-act="menu" data-menu="interval" ${p.reminders ? '' : 'disabled'}><span>${iv[p.reminder_interval] || iv[4]}</span>${icon('down', 14, 2.5)}</button></div></div>`,
     `<button type="button" class="btn ghost" data-act="closeModal">Close</button><button type="button" class="btn primary" data-act="savePrefs" ${m.busy ? 'disabled' : ''}>${m.saved ? icon('check', 16, 3) + 'Preferences Saved' : 'Save Settings'}</button>`);
@@ -212,10 +230,12 @@ function prefsHtml(m, wrap) {
 
 function teamHtml(m, wrap) {
   const ps = people(), ms = managers(), emails = Object.keys(ps);
-  const row = e => `<div class="team-row">${face(L.storedNameFor(e), 'lg')}<div class="grow"><b>${esc(ps[e].name || e)}</b><small>${esc(e)}</small></div><span class="chip">${ms.includes(e) ? 'Manager' : ps[e].role === 'lead' ? 'Team Leader' : 'Member'}</span></div>`;
+  // Sign In As (Remy only, like the hub's Login As User): see and work in DISPO OPS exactly as that person does.
+  const canAs = S.user && S.user.email.toLowerCase() === 'systems@totalchb.com' && !S.imp;
+  const row = e => `<div class="team-row">${face(L.storedNameFor(e), 'lg')}<div class="grow"><b>${esc(ps[e].name || e)}</b><small>${esc(e)}</small></div><span class="chip">${ms.includes(e) ? 'Manager' : ps[e].role === 'lead' ? 'Team Leader' : 'Member'}</span>${canAs && e !== 'systems@totalchb.com' && /@totalchb\.com$/.test(e) ? `<button type="button" class="btn sm outline" data-act="loginAs" data-email="${esc(e)}" ${m.asBusy ? 'disabled' : ''}>${m.asBusy === e ? '<span class="spin"></span>Signing In…' : 'Sign In As'}</button>` : ''}</div>`;
   const groups = [['Managers', emails.filter(e => ms.includes(e))], ...L.DEPTS.map(dp => [dp, emails.filter(e => !ms.includes(e) && ps[e].dept === dp)]), ['Other', emails.filter(e => !ms.includes(e) && !L.DEPTS.includes(ps[e].dept))]].filter(g => g[1].length);
   const when = S.directory && S.directory.copiedAt ? `Copied from the Universal Team Hub ${L.when(S.directory.copiedAt)}${S.directory.copiedBy ? ' by ' + S.directory.copiedBy : ''}.` : 'Not copied from the Universal Team Hub yet. Until then, owners are today\'s nine names.';
-  return wrap('Team', `<p class="note">${esc(when)} Names, photos, roles and departments come from the hub; manage people there.</p>
+  return wrap('Team Members', `<p class="note">${esc(when)} Names, photos, roles and departments come from the hub; manage people there.</p>
     ${groups.map(([g, list]) => `<div class="team-group"><span class="eyebrow">${esc(g)}</span>${list.sort((a, b) => (ps[a].order || 999) - (ps[b].order || 999)).map(row).join('')}</div>`).join('')}`,
     `<button type="button" class="btn ghost" data-act="closeModal">Close</button>${isManager() ? `<button type="button" class="btn primary" data-act="refreshTeam" ${m.busy ? 'disabled' : ''}>${m.busy ? '<span class="spin"></span>Copying…' : icon('rotate', 16) + 'Refresh From Hub'}</button>` : ''}`, true);
 }

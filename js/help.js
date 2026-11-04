@@ -1,7 +1,7 @@
 // Help: the User Guide (everyone) and the Manager Guide (Managers, Carlos and Systems). Plain language, made-up
 // examples only. Keep in step with docs/USER-GUIDE.md and docs/MANAGER-GUIDE.md.
 import { S, isManager, canEditSop } from './state.js';
-import { eyebrow } from './views.js';
+import { pageTitle } from './views.js';
 
 const USER = `
 <h2>User Guide</h2>
@@ -112,7 +112,7 @@ const MANAGER = `
 
 export function helpPage() {
   const mgr = isManager() || canEditSop(), part = mgr ? S.helpPart : 'user';
-  return `<section class="hero" data-key="help-hero"><div class="hero-text">${eyebrow()}<h1 class="title">Help <span class="accent">&amp; Guides</span></h1><p class="lede">How DISPO OPS works, step by step.</p></div></section>
+  return `${pageTitle('Help', '&amp; Guides', 'help-title')}
     ${mgr ? `<section class="toolbar" data-key="help-tabs-${part}"><div class="seg" role="group"><button type="button" data-act="helpPart" data-v="user" aria-pressed="${part === 'user'}">User Guide</button><button type="button" data-act="helpPart" data-v="manager" aria-pressed="${part === 'manager'}">Manager Guide</button></div></section>` : ''}
     <section class="help" data-key="help-${part}"><div class="card">${part === 'manager' ? MANAGER : USER}</div></section>`;
 }

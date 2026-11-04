@@ -75,7 +75,7 @@ export function startTooltips() {
 // One floating layer: a scrim to close it, and the glass menu placed under its button (a bottom sheet on phones).
 export function placeMenu(menu, anchor) {
   if (!menu || !anchor || !anchor.isConnected) return;
-  if (window.innerWidth <= 760) { menu.style.left = menu.style.top = ''; return; }
+  if (window.innerWidth < 640) { menu.style.left = menu.style.top = ''; return; }
   const r = anchor.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight;
   let left = Math.min(r.left, window.innerWidth - w - 8), top = r.bottom + 6;
   if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);

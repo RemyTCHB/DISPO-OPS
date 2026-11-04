@@ -62,6 +62,8 @@ const openDeal = async (page, addr) => {
   const st = await page.evaluate(a => { const d = [...window.__dispo.S.saved.values()].find(x => x.address === a); return d && d.status; }, addr);
   if (st) { await page.click(`[data-act="view"][data-v="${st}"]`); await settle(page); }
   await page.click(`tr:has-text("${addr}")`); await page.waitForSelector(`#tracker-address:has-text("${addr}")`); };
+const details = async (page, scope, part) => { await scope.locator('[data-act="details"]:not([data-part])').first().click(); await page.click(`[data-act="detailsPart"][data-v="${part}"]`); await settle(page); };
+const status = async (page, row, label) => { await row.locator('.status-pill').click(); await page.click(`.menu .mi:has-text("${label}")`); await page.waitForTimeout(200); };
 const menuPick = async (page, text) => { await page.click(`.menu .mi:has-text("${text}")`); await page.waitForTimeout(200); };
 
 async function main() {
@@ -117,24 +119,24 @@ async function main() {
   });
   await step('add, start, finish, edit and remove subtasks', async () => {
     const c = () => card('Format The Data');
+    await c().locator('.tk-xd [data-act="expand"]').click(); await settle(carlos);
     await c().locator('[data-box^="add:"]').click();
     await carlos.fill('[id^="newsub_ws_12"]', 'E2E Subtask One'); await c().locator('[data-act="addSubtask"]').click();
     await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks.length === 1);
     await c().locator('[data-box^="add:"]').click();
     await carlos.fill('[id^="newsub_ws_12"]', 'E2E Subtask Two'); await c().locator('[data-act="addSubtask"]').click();
     await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks.length === 2);
-    await c().locator('.sub', { hasText: 'E2E Subtask One' }).locator('[data-v="progress"]').click();
+    await status(carlos, c().locator('.sub', { hasText: 'E2E Subtask One' }), 'In Progress');
     let s = await until(async () => { const t = (await getDeal(W)).tasks.find(t => t.id === 'ws_12'); return t.subtasks[0].status === 'progress' ? t : null; });
     assert(s && s.subtasks[0].completed === false && s.subtasks[0].startedAt, 'In Progress not saved');
-    await c().locator('.sub', { hasText: 'E2E Subtask One' }).locator('[data-v="done"].st-done').click();
+    await status(carlos, c().locator('.sub', { hasText: 'E2E Subtask One' }), 'Done');
     await c().locator('.sub', { hasText: 'E2E Subtask Two' }).locator('.check').click();
     s = await until(async () => { const t = (await getDeal(W)).tasks.find(t => t.id === 'ws_12'); return t.completed ? t : null; });
     assert(s && s.subtasks.every(x => x.completed && x.doneAt), 'task should follow its subtasks');
     await c().locator('.sub', { hasText: 'E2E Subtask Two' }).locator('[data-box^="edit:"]').click();
     await carlos.fill('[id^="subedit_ws_12"]', 'E2E Subtask Two Renamed'); await c().locator('[data-act="saveSubtask"]').click();
     await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks[1].title === 'E2E Subtask Two Renamed');
-    await c().locator('.sub', { hasText: 'Renamed' }).locator('[data-box^="edit:"]').click();
-    await c().locator('[data-act="openRemoveSub"]').click();
+    await c().locator('.sub', { hasText: 'Renamed' }).locator('[data-act="openRemoveSub"]').click();
     assert(await carlos.locator('[data-act="removeSub"]').isDisabled(), 'Remove must wait for "Confirm"');
     await carlos.fill('#confirmWord', 'Confirm'); await carlos.click('[data-act="removeSub"]');
     assert(await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks.length === 1), 'subtask not removed');
@@ -172,7 +174,7 @@ async function main() {
   });
   await step('due date on a subtask and on the deal (Eastern time, 9:00 AM default)', async () => {
     const c = card('Format The Data');
-    await c.locator('.sub [data-pop="due"]').first().click();
+    await details(carlos, c.locator('.sub').first(), 'due');
     await carlos.click('.dp-day >> text="20"'); await carlos.click('[data-act="dpSet"]');
     const s = await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks[0].due);
     const et = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(s));
@@ -191,13 +193,13 @@ async function main() {
     await carlos.click('[data-act="deleteNote"]'); await carlos.click('[data-act="confirmOk"]');
     assert(await until(async () => ((await getDeal(W)).notes || []).length === 0), 'note not deleted');
     await carlos.keyboard.press('Escape');
-    await card('Format The Data').locator('.task-actions [data-pop="notes"]').click();
+    await details(carlos, card('Format The Data').locator('.tk-side'), 'notes');
     await carlos.fill('#noteText', 'E2E task note'); await carlos.click('[data-act="addNote"]');
     assert(await until(async () => ((await getDeal(W)).tasks.find(t => t.id === 'ws_12').notes || []).length === 1), 'task note not saved');
     await carlos.keyboard.press('Escape');
   });
   await step('files & links: add a link and upload a file (Storage)', async () => {
-    await card('Format The Data').locator('.task-actions [data-pop="files"]').click();
+    await details(carlos, card('Format The Data').locator('.tk-side'), 'files');
     await carlos.click('[data-act="popMode"][data-v="link"]');
     await carlos.fill('#linkName', 'E2E Link'); await carlos.fill('#linkUrl', 'https://example.com/e2e-file'); await carlos.click('[data-act="addLinkFile"]');
     await until(async () => ((await getDeal(W)).tasks.find(t => t.id === 'ws_12').files || []).length === 1);
@@ -311,10 +313,39 @@ async function main() {
     await remy.click('[data-act="tab"][data-tab="dashboard"] >> nth=0'); await settle(remy); await remy.waitForTimeout(500);
     assert((await remy.locator('table.deals').innerText()).includes('Hub'), 'names from the hub not shown');
   });
-  await step('a Member cannot refresh the team', async () => {
-    await moe.click('[data-menu="user"]'); await moe.click('[data-act="openTeam"]'); await settle(moe);
-    assert(await moe.locator('[data-act="refreshTeam"]').count() === 0, 'Refresh should be for Managers only');
-    await moe.click('[data-act="closeModal"]');
+  await step('Team Members is for Managers only', async () => {
+    await moe.click('[data-menu="user"]'); await settle(moe);
+    assert(await moe.locator('[data-act="openTeam"]').count() === 0, 'Members should not see Team Members');
+    assert((await moe.locator('.acct .role').innerText()).toLowerCase() === 'member · dispo', 'role line');
+    await moe.keyboard.press('Escape');
+  });
+  await step('Live clock: one pill with the save state; its panel says when it last saved', async () => {
+    await carlos.click('.live'); await settle(carlos);
+    const t = await carlos.locator('.live-pop').innerText();
+    assert(/Live: Everything Is Saved/.test(t) && /Last saved/.test(t), 'Live panel: ' + t.slice(0, 120));
+    assert(/\d{1,2}:\d{2}:\d{2} (AM|PM) E[SD]T/.test(await carlos.locator('.live').innerText()), 'clock text');
+    await carlos.click('.live-pop [data-act="closeMenu"]');
+  });
+  await step('Sign In As: Remy views DISPO OPS as Moe, changes are recorded via Remy, then Back To Remy', async () => {
+    await remy.click('[data-menu="user"]'); await remy.click('[data-act="openTeam"]');
+    await remy.click('.team-row:has-text("moe@totalchb.com") [data-act="loginAs"]'); await remy.click('[data-act="confirmOk"]');
+    await remy.waitForSelector('.imp-bar', { timeout: 20000 }); await remy.waitForSelector('[data-app-ready]');
+    assert((await remy.locator('.imp-bar').innerText()).includes('moe@totalchb.com'), 'orange bar should say whose view');
+    await openDeal(remy, '200 Sample Ave');
+    await remy.locator('.task', { hasText: 'Inspection' }).first().locator('[data-act="toggleTask"]').click();
+    const e = await until(async () => { const d = await getDeal('200 Sample Ave'); return (d.log || []).find(x => x.tid === 'ff_1' && x.ev === 'marked done'); });
+    assert(e && / \(via Remy/.test(e.by), 'change should be recorded via Remy, got ' + (e && e.by));
+    const audits = (await db().collection(`artifacts/${APP_ID}/server`).get()).docs.filter(d => d.id.startsWith('audit-'));
+    assert(audits.some(d => d.data().kind === 'login as' && d.data().as === 'moe@totalchb.com'), 'audit record');
+    await remy.click('[data-act="backToRemy"]');
+    await remy.waitForSelector('[data-app-ready]', { timeout: 20000 }); await remy.waitForTimeout(1500);
+    assert(await remy.locator('.imp-bar').count() === 0, 'should be back as Remy');
+    assert(await remy.evaluate(() => window.__dispo.S.user.email) === 'systems@totalchb.com', 'signed in as Remy again');
+  });
+  await step('Only Remy sees Sign In As', async () => {
+    await carlos.evaluate(() => { const D = window.__dispo; D.S.modal = { kind: 'team' }; D.render(); }); await settle(carlos);
+    assert(await carlos.locator('[data-act="loginAs"]').count() === 0, 'Carlos should not see Sign In As');
+    await carlos.evaluate(() => { window.__dispo.S.modal = null; window.__dispo.render(); });
   });
   await step('Remove Asset From Pipeline needs the password', async () => {
     await openDeal(carlos, '800 Sop Way');

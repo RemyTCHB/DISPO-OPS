@@ -6,7 +6,7 @@ import { startAurora } from './aurora.js';
 import { icon } from './icons.js';
 import { esc, patch, toast, startTooltips, placeMenu, wasDeferred, dpState, dpStep, dpMonth, dpValue } from './ui.js';
 import { S, deal, allDeals, addPending, dropPending, setCtx, saveView, ownerGroups, label, face, myName, sop, strategies, canEditSop, isManager } from './state.js';
-import { header, syncBadge, dashboard, tracker, trackerList } from './views.js';
+import { header, dashboard, tracker, trackerList } from './views.js';
 import { menuHtml, chatHtml, modalHtml, unreadFor } from './views2.js';
 import { sopPage } from './sopview.js';
 import { helpPage } from './help.js';
@@ -28,7 +28,8 @@ let queued = false, syncSt = { state: 'ready' };
 export function render() { if (!queued) { queued = true; requestAnimationFrame(draw); } }
 function draw() {
   queued = false;
-  patch($('header'), `<div data-key="h">${header()}</div>`);
+  S.syncSt = syncSt; S.lastSaved = store.lastSaved();
+  patch($('header'), `<div data-key="h-${syncSt.state}">${header(syncSt)}</div>`);
   if (!S.user) { $('main').innerHTML = gateHtml(); $('bottomNav').hidden = true; $('chatFab').hidden = true; $('chat').hidden = true; return; }
   const page = S.tab === 'dashboard' ? dashboard() : S.tab === 'tracker' ? tracker() : S.tab === 'sop' ? sopPage() : helpPage();
   patch($('main'), page);
@@ -48,9 +49,14 @@ function draw() {
   const md = modalHtml();
   $('modal').hidden = !md;
   if (md) patch($('modal'), `<div data-key="md-${S.modal.kind}" style="display:contents">${md}</div>`);
-  tick(); $('syncSlot') && ($('syncSlot').innerHTML = syncBadge(syncSt));
+  tick(); measure();
 }
-function findAnchor() { const a = S.menu && S.menu.anchorSel ? document.querySelector(S.menu.anchorSel) : null; if (a && S.menu) S.menu.anchor = a; return a; }
+// After a live update redraws the button a menu came from, find it again (or keep the menu where the button was).
+function findAnchor() {
+  const a = S.menu && S.menu.anchorSel ? document.querySelector(S.menu.anchorSel) : null;
+  if (a && S.menu) { S.menu.anchor = a; return a; }
+  const r = S.menu && S.menu.rect; return r ? { isConnected: true, getBoundingClientRect: () => r } : null;
+}
 function scrollChat(keepBottom) {
   const body = $('chatMessages'); if (!body) return;
   const c = S.chat;
@@ -65,12 +71,24 @@ function gateHtml() {
     ${S.gateError ? `<p class="err">${S.gateError}</p>` : ''}</section>`;
 }
 // the clock: server time, Eastern
+// The Live clock: one line, 12-hour Eastern, from the server clock ("Wed 11/04/2026 7:42:07 AM EST"; phones: time only)
 function tick() {
-  const a = $('clockA'), b = $('clockB'); if (!a) return;
-  const n = store.now(); a.textContent = L.etDate(n) + '  ' + L.et24(n); b.textContent = L.et12(n) + ' ' + L.etZone(n);
+  const dd = $('clockD'), tt = $('clockT'); if (!tt) return;
+  const n = store.now(); dd.textContent = L.etDate(n) + ' '; tt.textContent = L.et12(n) + ' ' + L.etZone(n);
 }
+// The pinned header slims past 120px of scroll (back within 40px of the top); the tabs line pins under it with a glass card.
+let slim = false;
+function measure() {
+  const h = $('header'); if (!h) return;
+  document.documentElement.style.setProperty('--head-h', Math.round(h.getBoundingClientRect().height) + 'px');
+  const y = window.scrollY || 0;
+  if (!slim && y > 120) { slim = true; document.body.classList.add('slim'); } else if (slim && y < 40) { slim = false; document.body.classList.remove('slim'); }
+  const tl = document.querySelector('.tabs-line');
+  document.body.classList.toggle('tabs-stuck', !!tl && y > 0 && tl.getBoundingClientRect().top <= h.getBoundingClientRect().height + 1);
+}
+window.addEventListener('scroll', () => requestAnimationFrame(measure), { passive: true });
 setInterval(tick, 1000);
-store.onSync(st => { syncSt = st; const s = $('syncSlot'); if (s) s.innerHTML = syncBadge(st); });
+store.onSync(st => { const changed = st.state !== syncSt.state || st.error !== syncSt.error; syncSt = st; if (changed) render(); });
 
 // ---------------------------------------------------------------- saving changes (shown at once, then confirmed)
 async function change(name, args, dealId = S.activeId) {
@@ -122,8 +140,9 @@ function openChatDeal(id) {
 }
 
 // ---------------------------------------------------------------- menus (every dropdown is the same glass menu)
+const selectorFor = el => !el || !el.dataset ? null : el.dataset.menu ? `[data-menu="${CSS.escape(el.dataset.menu)}"]` + (el.dataset.tid ? tgSel(tgOf(el)) : '') + (el.dataset.i !== undefined ? `[data-i="${CSS.escape(el.dataset.i)}"]` : '') + (el.dataset.oi !== undefined ? `[data-oi="${CSS.escape(el.dataset.oi)}"]` : '') : null;
 function choose(anchor, options, onPick, extra = {}) {
-  S.menu = { kind: 'choose', anchor, options: options.map((o, i) => ({ ...o, i })), onPick, ...extra }; render();
+  S.menu = { kind: 'choose', anchor, anchorSel: selectorFor(anchor), rect: anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null, options: options.map((o, i) => ({ ...o, i })), onPick, ...extra }; render();
 }
 const ownerOptions = current => ownerGroups().flatMap(g => [{ header: g.label }, ...g.items.map(p => ({ label: p.name, value: p.value, face: face(p.value), selected: current && L.sameAgent(current, p.value) }))]);
 const MENUS = {
@@ -149,7 +168,8 @@ const PICK = {
 function openMenu(el) {
   const kind = el.dataset.menu, anchor = el;
   if (S.menu && S.menu.anchor === el) { S.menu = null; return render(); }
-  if (kind === 'user' || kind === 'active' || kind === 'notifs') { S.menu = { kind, anchor, anchorSel: kind === 'notifs' ? '[data-menu="notifs"]' : null }; if (kind === 'notifs') S.selectedNotifs.clear(); return render(); }
+  if (kind === 'subStatus') { const tg = tgOf(el); return choose(anchor, [['todo', 'Not Started'], ['progress', 'In Progress'], ['done', 'Done']].map(([value, label]) => ({ value, label, selected: L.subStatus(L.findSub(deal(S.activeId), tg).s) === value })), v => change('setSubStatus', [tg, v]).then(() => autoClose(tg, v))); }
+  if (kind === 'user' || kind === 'active' || kind === 'notifs' || kind === 'sync') { S.menu = { kind, anchor, anchorSel: `.header [data-menu="${kind}"]`, rect: anchor.getBoundingClientRect() }; if (kind === 'notifs') S.selectedNotifs.clear(); return render(); }
   if (MENUS[kind]) return choose(anchor, MENUS[kind](), PICK[kind]);
   const d = deal(S.activeId);
   if (kind === 'owner') { const tg = tgOf(el); return choose(anchor, ownerOptions(L.findTask(d, tg).assignee), v => change('changeAssignee', [tg, v])); }
@@ -168,12 +188,25 @@ function openMenu(el) {
   if (kind === 'sopOwner') { const i = +el.dataset.i, oi = el.dataset.oi, t = S.sopEdit.data[S.sopEdit.strategy][i];
     return choose(anchor, ownerOptions(oi !== undefined ? t.dropdownOptions[+oi].defaultAssignee : t.defaultAssignee), v => { if (oi !== undefined) t.dropdownOptions[+oi].defaultAssignee = v; else t.defaultAssignee = v; }); }
 }
-function openPop(el) {
-  const pop = el.dataset.pop, tg = el.dataset.tid ? tgOf(el) : null, d = deal(S.activeId); if (!d) return;
+function openPop(el, details = false) {
+  const tg = el.dataset.tid ? tgOf(el) : null, d = deal(S.activeId); if (!d) return;
   const it = !tg ? d : tg.sid ? L.findSub(d, tg).s : L.findTask(d, tg);
-  S.menu = { kind: 'pop', pop, anchor: el, anchorSel: tg ? `[data-pop="${pop}"]${tgSel(tg)}` : `[data-pop="${pop}"]:not([data-tid])`, dealId: d.id, tg, mode: 'file', withSubs: false,
-    dp: pop === 'due' ? dpState(it.due, store.now()) : null };
+  let pop = el.dataset.pop;
+  if (details) {   // the Details button opens on the part used last (Notes the first time); subtasks have no Activity part
+    let last = 'notes'; try { last = localStorage.getItem('tchb_details_part') || 'notes'; } catch (e) {}
+    pop = el.dataset.part || last; if (tg && tg.sid && pop === 'activity') pop = 'notes';
+    if (!['due', 'notes', 'activity', 'files'].includes(pop)) pop = 'notes';
+  }
+  const sel = details ? `[data-act="details"]:not([data-part])${tgSel(tg)}` : tg ? `[data-pop="${pop}"]${tgSel(tg)}` : `[data-pop="${pop}"]:not([data-tid])`;
+  S.menu = { kind: 'pop', pop, details, anchor: details ? (document.querySelector(sel) || el) : el, anchorSel: sel, dealId: d.id, tg, mode: 'file', withSubs: false,
+    dp: dpState(it.due, store.now()) };
   render();
+}
+// a group whose last task was just finished folds away, as before
+function autoClose(tg, v) {
+  if (v !== 'done') return; const d = deal(S.activeId), t = d && L.findTask(d, tg); if (!t || !L.isTaskDone(t)) return;
+  const k = L.sectionKeyOf(t.phase, t.mainTask);
+  if (L.groupStats(d.tasks.filter(x => x.phase === t.phase && x.mainTask === t.mainTask)).allCompleted) { S.sections[k] = 'closed'; render(); }
 }
 
 // ---------------------------------------------------------------- dialogs
@@ -193,13 +226,28 @@ const A = {
     try { await store.signIn(); } catch (e) { if (e.code === 'auth/unauthorized-domain') S.gateError = `<strong>Domain Not Authorized.</strong> Add this domain in Firebase Authorized Domains: <code>${esc(location.hostname)}</code>`; else if (e.code !== 'auth/popup-closed-by-user') S.gateError = esc(e.message); }
     S.signingIn = false; render(); },
   signOut: () => store.logOut(),
+  askSignOut: () => confirmBox('Sign Out?', 'You will need to sign in with Google again to use DISPO OPS.', 'Sign Out', () => store.logOut(), false),
+  details: el => openPop(el, true),
+  detailsPart: el => { const m = S.menu; if (!m) return; m.pop = el.dataset.v; try { localStorage.setItem('tchb_details_part', m.pop); } catch (e) {} render(); },
+  expand: el => { const k = el.dataset.k, t = deal(S.activeId) && deal(S.activeId).tasks.find(x => x.id === k), def = !!(t && (t.subtasks || []).length);
+    const open = S.boxes['col:' + k] === undefined ? def : !S.boxes['col:' + k]; S.boxes['col:' + k] = open; render(); },
+  // Sign In As (Remy only): the server signs him in as that person; Back To Remy signs him back in as himself
+  loginAs: el => { const email = el.dataset.email, nm = L.storedNameFor(email);
+    confirmBox('Sign In As ' + label(nm) + '?', 'You will see and work in DISPO OPS exactly as ' + label(nm) + ' does. Anything you change is recorded as theirs, via you. Use Back To Remy at the top to come back.', 'Sign In As ' + label(nm).split(' ')[0], async () => {
+      S.modal = { kind: 'team', asBusy: email }; render();
+      try { const r = await store.callFunction('loginAs', { email }); await store.signInWithToken(r.token); }
+      catch (e) { if (S.modal) S.modal.asBusy = ''; render(); toast('Could not sign in as them', e.message || 'Try again.', true); }
+    }, false); },
+  backToRemy: async () => { S.backBusy = true; render();
+    try { const r = await store.callFunction('loginAs', { back: true }); await store.signInWithToken(r.token); }
+    catch (e) { S.backBusy = false; render(); toast('Could not switch back', 'Sign in with Google instead.', true); store.logOut(); } },
   theme: el => { setTheme(el.dataset.v); render(); },
   tab: el => goTab(el.dataset.tab || 'dashboard'),
   menu: el => openMenu(el),
   closeMenu: () => { S.menu = null; render(); },
   choose: el => { const m = S.menu, o = m.options[+el.dataset.i]; S.menu = null; if (o && m.onPick) m.onPick(o.value); render(); },
   pop: el => openPop(el),
-  retrySave: () => store.retryFailed(),
+  retrySave: () => { S.menu = null; render(); store.retryFailed(); },
   // dashboard
   view: el => { S.view.status = el.dataset.v; saveView(); render(); },
   clearFilter: () => { S.view.strategy = 'All'; saveView(); render(); },
@@ -306,7 +354,7 @@ const A = {
   resetPrefs: async () => { try { S.modal.prefs = { ...S.modal.prefs, ...(await store.resetPrefs()) }; render(); toast('Settings Reset', 'Notification preferences have been restored to their defaults.'); } catch (e) {} },
   enablePush: async () => { S.modal.push = 'busy'; render(); S.modal.push = await store.enablePush() ? 'ok' : 'fail'; render(); },
   wipeDevices: async () => { try { await store.wipeDevices(); S.modal.push = 'wiped'; render(); } catch (e) {} },
-  openTeam: () => { S.menu = null; S.modal = { kind: 'team' }; render(); },
+  openTeam: () => { if (!isManager()) return; S.menu = null; S.modal = { kind: 'team' }; render(); },
   refreshTeam: async () => { const m = S.modal; m.busy = true; render();
     try { const r = await store.callFunction('refreshDirectory', {}); toast('Team copied from the hub', `${r.people} people in ${r.depts} departments.`); }
     catch (e) { toast('Could not reach the hub', e.message || 'Try again later.', true); }
@@ -393,8 +441,8 @@ window.addEventListener('resize', () => { if (S.menu) render(); });
 
 // ---------------------------------------------------------------- start
 let ver = 0;
-function onUser(u) {
-  S.user = u; S.gateError = '';
+function onUser(u, imp = '') {
+  S.user = u; S.imp = imp; S.gateError = '';
   store.listenDeals((deals, changed) => {
     const seen = new Set();
     deals.forEach(d => { Object.defineProperty(d, '__v', { value: ++ver, enumerable: false }); S.saved.set(d.id, d); seen.add(d.id); });
@@ -428,7 +476,7 @@ function start() {
   store.syncClock(); setInterval(store.syncClock, 15 * 60 * 1000);
   const slow = setTimeout(() => { const s = document.querySelector('#boot small'); if (s) s.textContent = 'Almost ready…'; }, 1500);
   store.init({
-    onUser: u => { clearTimeout(slow); onUser(u); },
+    onUser: (u, imp) => { clearTimeout(slow); onUser(u, imp); },
     onSignedOut: () => { clearTimeout(slow); S.user = null; hideBoot(); render(); },
     onDenied: msg => { clearTimeout(slow); S.user = null; S.gateError = esc(msg); hideBoot(); render(); }
   });

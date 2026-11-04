@@ -2,7 +2,7 @@
 // the difference is how a deal is saved: each change is applied to the latest copy of the deal inside a transaction,
 // so two people working on one deal no longer overwrite each other.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, connectAuthEmulator, signInWithCredential }
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, connectAuthEmulator, signInWithCredential, signInWithCustomToken }
   from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache, connectFirestoreEmulator, onSnapshot,
   doc, setDoc, getDoc, updateDoc, deleteDoc, collection, arrayUnion, deleteField, runTransaction, FieldPath }
@@ -24,7 +24,9 @@ const VAPID = 'BAOBgrEDGG_WLKRjNEXU_L2_kHZrWTVFGUxN5gm7Udkkh9p0l2Tc8sTZhErN_dZmp
 export const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'tchb-dispo-ops';
 const DOMAIN = '@totalchb.com';
 
-let app, auth, db, provider, user = null;
+let app, auth, db, provider, user = null, imp = '';
+// Sign In As: a one-time sign-in Remy started carries imp (his email). Presence and read receipts stay off then.
+export const impBy = () => imp;
 export const me = () => user;
 export const myPrefix = () => (user && user.email ? user.email.split('@')[0] : 'Agent');   // stored as before (authors, drafts)
 const path = (...p) => ['artifacts', APP_ID, ...p];
@@ -57,7 +59,11 @@ export function init({ onUser, onSignedOut, onDenied }) {
   provider = new GoogleAuthProvider();
   provider.setCustomParameters({ hd: 'totalchb.com' });
   onAuthStateChanged(auth, async u => {
-    if (u && u.email && u.email.endsWith(DOMAIN)) { user = u; onUser(u); }
+    if (u && u.email && u.email.endsWith(DOMAIN)) {
+      user = u;
+      try { const r = await u.getIdTokenResult(); imp = String(r.claims.imp || '').toLowerCase(); } catch (e) { imp = ''; }
+      onUser(u, imp);
+    }
     else if (u) { await signOut(auth); user = null; onDenied('Access Denied. Only @totalchb.com emails are authorized.'); }
     else { user = null; stopAll(); onSignedOut(); }
   });
@@ -68,6 +74,9 @@ export async function signIn() {
   const r = await signInWithPopup(auth, provider);
   if (!(r.user.email && r.user.email.endsWith(DOMAIN))) { await signOut(auth); throw new Error('Access Denied. Only @totalchb.com emails are authorized.'); }
 }
+
+/** Sign In As / Back To Remy: the server's one-time sign-in token; the page reloads as that person. */
+export async function signInWithToken(token) { await signInWithCustomToken(auth, token); location.reload(); }
 
 export async function logOut() {
   if (user && db) { try { await setDoc(doc(db, ...path('public', 'data', 'active_users', user.uid)), { sessions: { [DEVICE]: deleteField() } }, { merge: true }); } catch (e) {} }
@@ -115,6 +124,8 @@ try {
 } catch (e) {}
 export function startPresence(cb) {
   const type = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop';
+  if (imp) { keep(onSnapshot(collection(db, ...path('public', 'data', 'active_users')), snap => { const list = [], t = Date.now();
+    snap.forEach(d => { const v = d.data(); if (v.sessions && Object.values(v.sessions).some(s => t - s.lastActive < 300000)) list.push(v); }); cb(list); })); return; }
   const beat = () => { if (user && db) setDoc(doc(db, ...path('public', 'data', 'active_users', user.uid)), { email: user.email, sessions: { [DEVICE]: { lastActive: Date.now(), type } } }, { merge: true }).catch(() => {}); };
   beat(); presenceTimer = setInterval(beat, 60000);
   keep(onSnapshot(collection(db, ...path('public', 'data', 'active_users')), snap => {
@@ -125,7 +136,8 @@ export function startPresence(cb) {
 }
 
 // ---------------------------------------------------------------- saving (Saving... / Not Saved + Retry)
-const sync = { pending: 0, failed: [], listeners: new Set() };
+const sync = { pending: 0, failed: [], listeners: new Set(), lastSaved: 0 };
+export const lastSaved = () => sync.lastSaved;
 export const onSync = f => { sync.listeners.add(f); f(syncState()); };
 const syncState = () => ({ state: sync.failed.length ? 'unsaved' : sync.pending ? 'saving' : navigator.onLine === false ? 'offline' : 'ready',
   error: sync.failed.length ? sync.failed[sync.failed.length - 1].message : '' });
@@ -133,7 +145,7 @@ const tell = () => sync.listeners.forEach(f => f(syncState()));
 window.addEventListener('online', tell); window.addEventListener('offline', tell);
 async function tracked(job, retry) {
   sync.pending++; tell();
-  try { return await job(); }
+  try { const r = await job(); sync.lastSaved = now(); return r; }
   catch (e) {
     if (!(e instanceof EditError) && retry) sync.failed.push({ retry, message: e.code === 'permission-denied' ? 'You do not have permission for that change.' : (e.message || 'Could not save') });
     throw e;
@@ -166,6 +178,7 @@ export function mutate(dealId, name, args = []) {
 
 /** Opening a deal's chat records when you read it (as before, without touching "Time Last Edited"). */
 export function markChatRead(dealId) {
+  if (imp) return Promise.resolve();                     // reading as someone else doesn't mark it read for them
   return updateDoc(dealRef(dealId), new FieldPath('readBy', myPrefix().toLowerCase()), Date.now()).catch(() => {});
 }
 
@@ -204,7 +217,7 @@ export async function loadPrefs() {
 }
 export const savePrefs = p => tracked(() => setDoc(prefsRef(), { email: user.email, ...p, updatedAt: Date.now() }, { merge: true }));
 export async function resetPrefs() { const d = defaultPrefs(user.email); await setDoc(prefsRef(), { email: user.email, ...d, updatedAt: Date.now() }, { merge: true }); return d; }
-export const wipeDevices = () => setDoc(prefsRef(), { fcmTokens: [] }, { merge: true });
+export const wipeDevices = () => imp ? Promise.reject(new Error('Not while signed in as someone else')) : setDoc(prefsRef(), { fcmTokens: [] }, { merge: true });
 
 // Push: the same service worker and key as before; while the app is open, a push shows as a toast.
 let messaging = null, msgMod = null;
@@ -216,7 +229,7 @@ export async function startMessaging(onForeground) {
   } catch (e) { messaging = null; }
 }
 export async function enablePush() {
-  if (!messaging || !msgMod) return false;
+  if (!messaging || !msgMod || imp) return false;
   try {
     const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
     await registration.update();

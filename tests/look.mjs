@@ -42,8 +42,8 @@ async function main() {
   const srv = await serve(ROOT, PORT);
   const browser = await chromium().launch();
   const shots = [];
-  for (const theme of ['light', 'dark']) for (const [w, h, tag] of [[1440, 900, 'desktop'], [390, 844, 'phone']]) {
-    const ctx = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: theme, deviceScaleFactor: 1, hasTouch: tag === 'phone', isMobile: tag === 'phone' });
+  for (const theme of ['light', 'dark']) for (const [w, h, tag] of [[1440, 900, 'desktop'], [1280, 800, 'd1280'], [1024, 768, 'd1024'], [390, 844, 'phone'], [360, 740, 'p360']]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: theme, deviceScaleFactor: 1, hasTouch: /^p/.test(tag), isMobile: /^p/.test(tag) });
     const page = await ctx.newPage();
     page.on('pageerror', e => errors.push(`${tag}/${theme}: ${e.message}`));
     page.on('console', m => { if (m.type() === 'error' && !/favicon|ERR_FAILED|net::/.test(m.text())) errors.push(`${tag}/${theme}: ${m.text()}`); });
@@ -54,14 +54,17 @@ async function main() {
     await signIn(page, 'carlos@totalchb.com');
     await page.waitForSelector('[data-app-ready]', { timeout: 20000 });
     await page.waitForTimeout(1500);
-    const snap = async name => { await page.waitForTimeout(400); const f = path.join(OUT, `${name}-${tag}-${theme}.png`); await page.screenshot({ path: f, fullPage: tag === 'desktop' }); shots.push(f); };
+    const snap = async name => { await page.waitForTimeout(400); const f = path.join(OUT, `${name}-${tag}-${theme}.png`); await page.screenshot({ path: f, fullPage: false }); shots.push(f); };
     await snap('dashboard');
+    await page.evaluate(() => window.scrollTo(0, 700)); await page.waitForTimeout(400); await page.screenshot({ path: path.join(OUT, `dashboard-scrolled-${tag}-${theme}.png`) }); await page.evaluate(() => window.scrollTo(0, 0));
     await page.evaluate(id => window.__dispo.openTracker(id), deals[0].id);
     await snap('tracker');
+    await page.evaluate(() => { const el = [...document.querySelectorAll('.task')].find(x => x.querySelector('.subs')); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 160); });
+    await page.waitForTimeout(400); await page.screenshot({ path: path.join(OUT, `tracker-scrolled-${tag}-${theme}.png`) }); await page.evaluate(() => window.scrollTo(0, 0));
     if (tag === 'desktop' && theme === 'light') {
       await page.click('[data-pop="notes"]:not([data-tid])'); await snap('notes');
       await page.keyboard.press('Escape');
-      await page.click('.task [data-pop="due"]'); await snap('due');
+      await page.click('.task [data-act="details"]:not([data-part])'); await page.click('[data-act="detailsPart"][data-v="due"]'); await snap('due');
       await page.keyboard.press('Escape');
       await page.click('.task [data-menu="owner"]'); await snap('owner-menu');
       await page.keyboard.press('Escape');

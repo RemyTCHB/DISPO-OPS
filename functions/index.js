@@ -600,3 +600,42 @@ exports.hubSyncDaily = functions.runWith({ secrets: [HUB_SECRET] }).pubsub.sched
     console.log(`hubSyncDaily: ${snap.size} deals, sent ${ok}, failed ${failed}`);
     return null;
 });
+
+// ============================================================================
+// SIGN IN AS (revamp; Remy only, like the hub's Login As User)
+// Remy (systems@) signs in as a team member to see and work in DISPO OPS exactly as they do: the server makes a
+// one-time sign-in for that person marked imp (Remy's email). { back: true } from that borrowed sign-in returns him to
+// his own account. Never from a borrowed sign-in; only people who have signed in to DISPO OPS before. Each use is kept
+// in artifacts/tchb-dispo-ops/server/audit-* (server only). Logs say what happened, never who.
+// Needs the functions' service account to hold "Service Account Token Creator" (to sign the one-time sign-in).
+// ============================================================================
+const LOGIN_AS_ADMIN = "systems@totalchb.com";
+exports.loginAs = functions.https.onCall(async (data, context) => {
+    const token = (context.auth && context.auth.token) || {}, email = String(token.email || '').toLowerCase();
+    if (!context.auth || !token.email_verified || !email.endsWith('@totalchb.com')) {
+        throw new functions.https.HttpsError('unauthenticated', 'Sign in with your company account.');
+    }
+    const db = admin.firestore(), audit = row => db.doc(`artifacts/tchb-dispo-ops/server/audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`).set({ ...row, at: Date.now() });
+    if (data && data.back === true) {
+        if (String(token.imp || '').toLowerCase() !== LOGIN_AS_ADMIN) throw new functions.https.HttpsError('permission-denied', 'This is not a Sign In As session.');
+        const remy = await admin.auth().getUserByEmail(LOGIN_AS_ADMIN);
+        const back = await admin.auth().createCustomToken(remy.uid);
+        await audit({ kind: 'back to remy', by: LOGIN_AS_ADMIN, from: email });
+        console.log('loginAs: back');
+        return { token: back };
+    }
+    if (email !== LOGIN_AS_ADMIN || token.imp) throw new functions.https.HttpsError('permission-denied', 'Only Remy can do this.');
+    const target = String((data && data.email) || '').trim().toLowerCase();
+    if (!/^[^@\s/]+@totalchb\.com$/.test(target) || target === LOGIN_AS_ADMIN) throw new functions.https.HttpsError('invalid-argument', 'Which team member?');
+    let user;
+    try { user = await admin.auth().getUserByEmail(target); }
+    catch (e) {
+        if (e.code === 'auth/user-not-found') throw new functions.https.HttpsError('not-found', 'They have not signed in to DISPO OPS yet, so there is no account to open.');
+        throw e;
+    }
+    if (user.disabled) throw new functions.https.HttpsError('failed-precondition', 'That account is turned off.');
+    const out = await admin.auth().createCustomToken(user.uid, { imp: LOGIN_AS_ADMIN });
+    await audit({ kind: 'login as', by: LOGIN_AS_ADMIN, as: target });
+    console.log('loginAs: ok');
+    return { token: out };
+});

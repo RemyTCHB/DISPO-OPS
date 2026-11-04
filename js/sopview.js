@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { esc } from './ui.js';
 import { S, sop, label, face, canEditSop } from './state.js';
 import { sopProblems } from './logic.js';
-import { eyebrow } from './views.js';
+import { pageTitle } from './views.js';
 
 const romanOf = p => { const m = /Phase\s+([IVXL]+)\b/.exec(p || ''); return m ? m[1] : '-'; };
 const groupBy = tasks => { const out = new Map(); tasks.forEach((t, i) => { if (!out.has(t.phase)) out.set(t.phase, new Map()); const g = out.get(t.phase); if (!g.has(t.mainTask)) g.set(t.mainTask, []); g.get(t.mainTask).push({ t, i }); }); return out; };
@@ -26,9 +26,9 @@ export function sopPage() {
         ${(t.defaultSubtasks || []).map(s => `<div class="sub-l">Subtask: ${esc(s)}</div>`).join('')}
         ${(t.dropdownOptions || []).map(o => `<div class="sub-l">Path: ${esc(o.title)} · ${esc(label(o.defaultAssignee))}</div>`).join('')}</div>`).join('')}</div>`).join('')}</section>`;
   }
-  return `<section class="hero" data-key="sop-hero"><div class="hero-text">${eyebrow()}<h1 class="title">SOP <span class="accent">Reference</span></h1><p class="lede">${saved} Edits apply to deals deployed after they are saved.</p></div>
-      ${canEditSop() ? '<button type="button" class="btn secondary" data-act="sopEdit">' + icon('pen', 16) + 'Edit SOP</button>' : ''}</section>
-    <section class="toolbar" data-key="sop-tabs-${esc(S.sopStrategy)}-${names.length}"><div class="seg" role="group" aria-label="Exit strategy">${names.map(n => `<button type="button" data-act="sopStrategy" data-v="${esc(n)}" aria-pressed="${n === S.sopStrategy}">${esc(n)} <span class="n">${all[n].length}</span></button>`).join('')}</div></section>
+  return `${pageTitle('SOP', 'Reference', 'sop-title')}
+    <section class="toolbar" data-key="sop-tabs-${esc(S.sopStrategy)}-${names.length}"><div class="seg" role="group" aria-label="Exit strategy">${names.map(n => `<button type="button" data-act="sopStrategy" data-v="${esc(n)}" aria-pressed="${n === S.sopStrategy}">${esc(n)} <span class="n">${all[n].length}</span></button>`).join('')}</div>
+      <span class="spacer"></span><small class="muted">${saved} Edits apply to deals deployed after they are saved.</small>${canEditSop() ? '<button type="button" class="btn secondary sm" data-act="sopEdit">' + icon('pen', 15) + 'Edit SOP</button>' : ''}</section>
     <div class="sop-wrap" data-key="sop-body-${esc(S.sopStrategy)}" data-morph>${body || '<section class="empty" data-key="e"><h3>No Tasks Yet</h3></section>'}</div>`;
 }
 
@@ -55,7 +55,8 @@ function sopEditor() {
           <span class="row" style="gap:0"><button type="button" class="mini" data-act="sopMove" data-i="${i}" data-n="-1" title="Move up">${icon('up', 16)}</button><button type="button" class="mini" data-act="sopMove" data-i="${i}" data-n="1" title="Move down">${icon('down', 16)}</button><button type="button" class="mini" data-act="sopRemove" data-i="${i}" title="Remove task">${icon('trash', 16)}</button></span></div>`).join('')}</div>`).join('')}</section>`;
     void first;
   }
-  return `<section class="hero" data-key="sope-hero"><div class="hero-text">${eyebrow()}<h1 class="title">Edit <span class="accent">SOP</span></h1><p class="lede">Changes apply to deals deployed after you save. Deals already in the pipeline keep their own tasks.</p></div></section>
+  return `${pageTitle('Edit', 'SOP', 'sope-title')}
+    <p class="center-note" data-key="sope-note">Changes apply to deals deployed after you save. Deals already in the pipeline keep their own tasks.</p>
     <section class="card sticky-bar glass" data-key="sope-bar"><div class="seg" role="group">${names.map(n => `<button type="button" data-act="sopEditStrategy" data-v="${esc(n)}" aria-pressed="${n === cur}">${esc(n)}</button>`).join('')}</div>
       <button type="button" class="btn sm ghost" data-act="sopAddStrategy">${icon('plus', 14, 2.5)}Strategy</button>
       <span class="meter ${total === 100 ? 'ok' : 'bad'}">${esc(cur)}: ${total}%</span><span class="grow"></span>
