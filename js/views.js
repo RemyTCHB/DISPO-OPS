@@ -92,12 +92,13 @@ function dealCard(d) {
 }
 
 // ---------------------------------------------------------------- Active Deal Tracker
-export function trackerList() { return L.viewDeals(allDeals(), S.view); }
+// Previous / Next: the dashboard's filter and sort, within the open deal's own status (Open, Closed or Cancelled)
+export function trackerList() { const d = S.activeId && deal(S.activeId); return L.viewDeals(allDeals(), { ...S.view, status: d ? L.statusOf(d) : S.view.status }); }
 export function tracker() {
   const d = S.activeId && deal(S.activeId);
   const list = trackerList(), idx = d ? list.findIndex(x => x.id === d.id) : -1;
   const nav = `<section class="nav-row" data-key="nav-${S.activeId}-${idx}-${list.length}">
-    <button type="button" class="btn outline" data-act="tab" data-tab="dashboard">${icon('back', 18, 2.5)}Back<span class="long">&nbsp;To Master Dashboard</span></button>
+    <button type="button" class="btn outline" data-act="tab" data-tab="dashboard">${icon('back', 18, 2.5)}<span>Back<span class="long"> To Master Dashboard</span></span></button>
     ${d ? `<button type="button" class="dp-round" data-act="step" data-n="-1" ${idx > 0 ? '' : 'disabled'} aria-label="Previous deal" title="Previous deal">${icon('back', 18, 2.5)}</button>
     <span class="count">${idx >= 0 ? `${idx + 1} of ${list.length}` : 'Not in this view'}</span>
     <button type="button" class="dp-round" data-act="step" data-n="1" ${idx >= 0 && idx < list.length - 1 ? '' : 'disabled'} aria-label="Next deal" title="Next deal">${icon('right', 18, 2.5)}</button>` : ''}
