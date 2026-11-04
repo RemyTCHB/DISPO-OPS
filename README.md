@@ -51,7 +51,7 @@ The page has no build step: edit `index.html`, `styles.css` or `js/`.
 - `js/store.js` talks to Firebase.
 - The screens are in `js/views.js`, `js/views2.js`, `js/sopview.js` and `js/help.js`.
 
-Checks (Node 20+, Java for the emulators):
+Checks (Node 22+, Java for the emulators):
 
 ```bash
 cd tests && npm ci && cd ..
