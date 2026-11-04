@@ -656,11 +656,11 @@ table.deals tbody tr:last-child td { border-bottom: none; }
 /* ================================================================ the hub's header standard (RemyTCHB/HUB docs/HEADER.md) */
 /* 0. page width and margins */
 html { scrollbar-gutter: stable; }   /* same width on every page: no sideways jump when a page is too short to scroll */
-.main { max-width: 1280px; padding: 36px 24px 96px; gap: 24px; }
+.main { max-width: 1328px; padding: 36px 24px 96px; gap: 24px; }   /* the hub's 1280px of content plus its 24px margins */
 /* 1. header bar: left (logo, app, Live clock) · middle (page tabs) · right (bell, Active, light/dark, photo) */
 .header { transition: background 160ms var(--ease-out); }
 body.slim .header { background: color-mix(in srgb, var(--surface-card) 94%, transparent); }
-.header-row { max-width: 1280px; padding: 14px 24px; gap: 10px 16px; flex-wrap: wrap; justify-content: space-between; transition: padding 160ms var(--ease-out); }
+.header-row { max-width: 1328px; padding: 14px 24px; gap: 10px 16px; flex-wrap: wrap; justify-content: space-between; transition: padding 160ms var(--ease-out); }
 body.slim .header-row { padding-top: 6px; padding-bottom: 6px; }
 .hg { display: flex; align-items: center; gap: 10px; flex: 1 1 0; min-width: max-content; }
 .hg.hr { justify-content: flex-end; }
@@ -669,10 +669,9 @@ body.slim .header-row { padding-top: 6px; padding-bottom: 6px; }
 .brand .app { border-left-width: 2px; }
 /* DISPO's middle holds three page tabs (wider than the hub's company switch), so it drops to its own centred line
    below 1500px instead of the hub's 1240px */
-/* the header row is capped at 1280px, and DISPO's three tabs plus the clock and buttons need ~1250px: tabs get their own centred line on every desktop width */
-@media (min-width: 640px) { .hm { order: 3; flex: 1 1 100%; } }
+@media (min-width: 640px) { body.hm-drop .hm { order: 3; flex: 1 1 100%; } }   /* set by fitHeader() in app.js */
 .hm .seg.tabs { display: flex; }
-.hm .seg.tabs button { padding: 9px 18px; font-size: 14px; letter-spacing: 0.04em; text-transform: none; }
+.hm .seg.tabs button { padding: 9px 16px; font-size: 14px; letter-spacing: 0.02em; text-transform: none; }
 .hm .seg.tabs button[aria-pressed='true'] { background: var(--tchb-indigo-700); color: #fff; box-shadow: var(--shadow-button); }
 :root[data-theme='dark'] .hm .seg.tabs button[aria-pressed='true'] { background: #756dc4; color: #fff; }
 .seg.theme button { width: 40px; height: 32px; padding: 0; justify-content: center; }

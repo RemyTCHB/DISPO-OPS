@@ -78,8 +78,20 @@ function tick() {
 }
 // The pinned header slims past 120px of scroll (back within 40px of the top); the tabs line pins under it with a glass card.
 let slim = false;
+// Header like the hub's: logo + clock | page tabs | buttons on one row when they fit; otherwise the tabs take their
+// own centred line under the other two (checked from the real widths, so other fonts never wrap the buttons).
+const gw = g => { const k = [...g.children].filter(c => getComputedStyle(c).display !== 'none' && getComputedStyle(c).position !== 'absolute');
+  return k.reduce((s, c) => s + c.getBoundingClientRect().width, 0) + Math.max(0, k.length - 1) * (parseFloat(getComputedStyle(g).columnGap) || 0); };
+function fitHeader() {
+  const row = document.querySelector('.header-row'), l = row && row.querySelector('.hl'), m = row && row.querySelector('.hm'), r = row && row.querySelector('.hr');
+  if (!l || !m || !r || window.innerWidth < 640) return document.body.classList.remove('hm-drop');
+  const cs = getComputedStyle(row), room = row.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const gap = parseFloat(cs.columnGap) || 0;
+  document.body.classList.toggle('hm-drop', gw(l) + gw(m) + gw(r) + gap * 2 > room - 4);
+}
 function measure() {
   const h = $('header'); if (!h) return;
+  fitHeader();
   document.documentElement.style.setProperty('--head-h', Math.round(h.getBoundingClientRect().height) + 'px');
   const y = window.scrollY || 0;
   if (!slim && y > 120) { slim = true; document.body.classList.add('slim'); } else if (slim && y < 40) { slim = false; document.body.classList.remove('slim'); }
@@ -87,6 +99,8 @@ function measure() {
   document.body.classList.toggle('tabs-stuck', !!tl && y > 0 && tl.getBoundingClientRect().top <= h.getBoundingClientRect().height + 1);
 }
 window.addEventListener('scroll', () => requestAnimationFrame(measure), { passive: true });
+window.addEventListener('resize', () => requestAnimationFrame(measure));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measure());
 setInterval(tick, 1000);
 store.onSync(st => { const changed = st.state !== syncSt.state || st.error !== syncSt.error; syncSt = st; if (changed) render(); });
 
