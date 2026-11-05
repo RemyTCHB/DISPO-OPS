@@ -5,8 +5,8 @@ const { isClosed, overdueItems, overdueDue, directoryFrom, sign, hubPayload, pay
 admin.initializeApp();
 
 // Revamp settings. HUB_SYNC_SECRET is set once with `firebase functions:secrets:set HUB_SYNC_SECRET` (the same value
-// as DISPO_OPS_SECRET in the hub's Vercel settings); never put its value in code. The sync into the hub stays
-// off until HUB_SYNC_ENABLED is set to true (functions/.env).
+// as DISPO_OPS_SECRET in the hub's Vercel settings); never put its value in code. The sync into the hub is
+// on while HUB_SYNC_ENABLED is true (functions/.env); set it to false and redeploy to switch it off.
 const HUB_SECRET = defineSecret("HUB_SYNC_SECRET");
 const HUB_URL = defineString("HUB_URL", { default: "https://hub.totalchb.com" });
 const APP_URL = defineString("APP_URL", { default: "https://dispo-ops.totalchb.com" });
@@ -74,7 +74,7 @@ exports.propertyWatcher = functions.runWith(WATCHER_OPTS).firestore
     const afterData = change.after ? change.after.data() : null;
     const appId = context.params.appId;
 
-    // The one-way sync into the hub (does nothing while it is switched off)
+    // The one-way sync into the hub (the hub mirrors each deal; does nothing while it is switched off)
     const hubJob = hubSyncDeal(db, appId, context.params.propertyId, afterData).catch(e => console.error('hub sync failed:', e.message));
 
     if (!afterData) return hubJob; // Property was deleted
@@ -573,7 +573,7 @@ exports.refreshDirectory = functions.runWith({ secrets: [HUB_SECRET] }).https.on
 });
 
 // ============================================================================
-// THE ONE-WAY SYNC INTO THE UNIVERSAL TEAM HUB (revamp, switched off)
+// THE ONE-WAY SYNC INTO THE UNIVERSAL TEAM HUB (revamp; HUB_SYNC_ENABLED in functions/.env)
 // Sent after each change that moves a deal's progress, plus a daily catch-up. Logs counts only.
 // ============================================================================
 async function hubSyncDeal(db, appId, id, prop, force = false) {

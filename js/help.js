@@ -14,7 +14,7 @@ const USER = `
 <ul>
   <li><b>Light / Dark</b> switches the look; your choice is remembered on that device.</li>
   <li><b>Active</b> shows who is online now, on phone or desktop.</li>
-  <li>The two tabs: <b>Master Dashboard</b> and <b>Active Deal Tracker</b>. <b>SOP Reference</b> is in the menu under your photo. On a phone all three are in the bar at the bottom, with <b>Chat</b>.</li>
+  <li>The two tabs: <b>Master Dashboard</b> and <b>Active Deal Tracker</b>. <b>SOP Reference</b> is in the menu under your photo. On a phone the two tabs are in the bar at the bottom, with <b>Chat</b>, and SOP Reference is in the photo menu too.</li>
   <li>The bell opens your <b>Notifications</b>; your photo opens <b>Notification Settings</b>, <b>Team</b>, <b>Help</b> and <b>Sign Out</b>.</li>
   <li>Under the title, the badge says <b>Live</b> when everything is saved, <b>Saving…</b> while a change is on its way, and <b>Not Saved · Retry</b> if a change could not be saved (click it to try again). The clock is Eastern time.</li>
 </ul>

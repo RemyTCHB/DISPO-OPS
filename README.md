@@ -95,8 +95,12 @@ and Vercel settings, never in the code.
 
 - **Universal Team Hub** (hub.totalchb.com). DISPO OPS asks the hub's signed team endpoint for every department when a
   Manager clicks Refresh From Hub.
-- **Hub deal sync** (one way, built, switched off). It sends each deal as "DISPO - &lt;address&gt;" to the hub's
-  `/api/dispo-ops`. To turn it on, set `HUB_SYNC_ENABLED=true` in `functions/.env` and redeploy the functions.
+- **Hub deal sync** (one way; the hub is a mirror). Each deal is sent to the hub's `/api/dispo-ops` after every change
+  that moves its progress, plus a daily catch-up at 7:15 AM ET. The hub shows it as "DISPO OPS - &lt;address&gt;" in
+  Carlos's list (ring = the deal's overall %), one subtask per phase ("&lt;phase&gt; · &lt;%&gt;", then "Working On: &lt;group&gt; ›
+  Next: &lt;task&gt;", owned by that task's owner). Closed = Done, Cancelled = Cancelled. Closed or cancelled deals never
+  sent get no task. Switched on with `HUB_SYNC_ENABLED=true` in `functions/.env` (set false and redeploy the
+  functions to switch it off). `node tests/hubsync.mjs` checks it end to end on the emulators.
 - Both use the shared secret `HUB_SYNC_SECRET` (Firebase secret). The hub has the same value as `DISPO_OPS_SECRET`.
 
 ---

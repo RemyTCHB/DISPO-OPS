@@ -2,7 +2,7 @@
 //  - Closed / Cancelled deals send no alerts.
 //  - Overdue alerts: a task or subtask past its due date nudges the task's owner once, then on their reminder interval.
 //  - The team copied from the Universal Team Hub (its signed team endpoint).
-//  - The one-way sync into the hub (built, switched off until the owner decides what moves).
+//  - The one-way sync into the hub (the hub mirrors each deal; HUB_SYNC_ENABLED in functions/.env).
 const crypto = require('crypto');
 
 const isClosed = d => !!d && (d.status === 'closed' || d.status === 'cancelled');
@@ -46,7 +46,7 @@ function sign(secret, body, ts = Math.floor(Date.now() / 1000)) {
   return { 'X-Hub-Timestamp': String(ts), 'X-Hub-Signature': 'sha256=' + crypto.createHmac('sha256', secret).update(ts + '.' + body).digest('hex') };
 }
 
-// ---------------------------------------------------------------- the one-way sync into the hub (switched off)
+// ---------------------------------------------------------------- the one-way sync into the hub (a mirror)
 // One hub task per deal ("DISPO OPS - <address>" in Carlos's list, ring = overall %); one hub subtask per phase (its %,
 // the group being worked on and that group's next task, owned by that task's owner). Closed = Done in the hub, Cancelled = the hub's Cancelled status.
 function phaseStats(prop) {

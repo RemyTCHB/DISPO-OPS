@@ -41,7 +41,7 @@ function draw() {
   // bottom bar (phones)
   const bn = (tab, txt, ic, act = 'tab') => `<button type="button" data-act="${act}" data-tab="${tab}" aria-pressed="${act === 'tab' ? S.tab === tab : S.chat.open}">${icon(ic, 20)}${txt}${act === 'chatToggle' && unread && !S.chat.open ? `<span class="badge">${unread > 9 ? '9+' : unread}</span>` : ''}</button>`;
   $('bottomNav').hidden = false;
-  $('bottomNav').innerHTML = bn('dashboard', 'Master', 'layers') + bn('tracker', 'Tracker', 'list') + bn('sop', 'SOPs', 'book') + bn('', 'Chat', 'chat', 'chatToggle');
+  $('bottomNav').innerHTML = bn('dashboard', 'Master', 'layers') + bn('tracker', 'Tracker', 'list') + bn('', 'Chat', 'chat', 'chatToggle');
   // menu and dialog layers
   const mh = menuHtml();
   $('layer').hidden = !mh;

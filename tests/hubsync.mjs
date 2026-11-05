@@ -1,7 +1,7 @@
 // The DISPO OPS -> hub sync end to end on the emulators: a deal saved in Firestore runs the real Cloud Function, which
 // signs and sends it to a stand-in hub on HUB_URL; the stand-in runs the hub's own sync rules (api/_lib/dispoops.js
 // from a checkout of the hub next to this repo, HUB_DIR) and keeps the hub tasks in memory. Made-up deals only.
-//   HUB_SYNC_ENABLED=true in functions/.env.local, then:
+//   with HUB_SYNC_ENABLED=true (functions/.env):
 //   firebase emulators:exec --project demo-dispo-ops "node tests/hubsync.mjs"
 import fs from 'node:fs';
 import http from 'node:http';
@@ -53,6 +53,16 @@ async function main() {
     assert(t.subs[1].title.startsWith('Phase II: Marketing Prep · 0%\nStarts With: Pull Local Hyper Qualified Buyers › Next: At least 3 Local Investors'), 'phase II: ' + JSON.stringify(t.subs[1].title));
     fs.mkdirSync(path.join(HERE, 'out'), { recursive: true }); fs.writeFileSync(path.join(HERE, 'out', 'hub-task.json'), JSON.stringify(t, null, 1));
   });
+  await step('the phase owner follows the owner of the task being worked on in DISPO OPS', async () => {
+    d.tasks.find(t => t.title === 'Confirming Access').assignee = 'Chris'; await db.doc(`${base}/${d.id}`).set(d);
+    const t = await until(() => tasks[d.id] && tasks[d.id].subs[0].owner === 'Chris Test' && tasks[d.id]); assert(t, 'owner stayed ' + tasks[d.id].subs[0].owner);
+  });
+  await step('a cancelled deal is Cancelled in the hub; reopened, it is open again', async () => {
+    d.status = 'cancelled'; await db.doc(`${base}/${d.id}`).set(d);
+    assert(await until(() => tasks[d.id] && tasks[d.id].status === 'cancelled'), 'not cancelled');
+    d.status = 'open'; await db.doc(`${base}/${d.id}`).set(d);
+    assert(await until(() => tasks[d.id] && tasks[d.id].status === undefined), 'still cancelled');
+  });
   await step('closed and cancelled deals that were never sent get no hub task', async () => {
     const c = newDeal(DEFAULT_SOP, '200 Sample Ave', 'Novation', null, Date.now()); c.status = 'closed';
     const x = newDeal(DEFAULT_SOP, '300 Demo Rd', 'Creative', null, Date.now()); x.status = 'cancelled';
@@ -64,7 +74,7 @@ async function main() {
     d.status = 'closed'; await db.doc(`${base}/${d.id}`).set(d);
     const t = await until(() => tasks[d.id] && tasks[d.id].done && tasks[d.id]); assert(t && t.subs.every(s => s.done), 'not done');
   });
-  console.log(`\n${4 - fails} passed, ${fails} failed`);
+  console.log(`\n${6 - fails} passed, ${fails} failed`);
   hub.close(); process.exit(fails ? 1 : 0);
 }
 main().catch(e => { console.error(e); process.exit(1); });

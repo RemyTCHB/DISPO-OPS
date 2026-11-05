@@ -312,7 +312,7 @@ async function main() {
     await remy.click('[data-menu="user"]'); await remy.click('[data-act="openTeam"]'); await remy.click('[data-act="refreshTeam"]');
     const dir = await until(async () => { const x = (await db().doc(`${P}/settings/directory`).get()).data(); return x && x.people['jess@totalchb.com'] ? x : null; }, 20000);
     assert(dir && hubCalls.some(c => c.ok && c.url === '/api/title-agent/team'), 'hub not asked with a valid signature');
-    assert(JSON.parse(hubCalls.find(c => c.ok).body).depts.join() === 'TC,DISPO,ACQ,OPS', 'all departments should be asked for');
+    assert(JSON.parse(hubCalls.find(c => c.ok && c.url === '/api/title-agent/team').body).depts.join() === 'TC,DISPO,ACQ,OPS', 'all departments should be asked for');
     await remy.click('[data-act="closeModal"]'); await remy.waitForTimeout(500);
     await remy.click('[data-act="tab"][data-tab="dashboard"] >> nth=0'); await settle(remy); await remy.waitForTimeout(500);
     assert((await remy.locator('table.deals').innerText()).includes('Hub'), 'names from the hub not shown');
