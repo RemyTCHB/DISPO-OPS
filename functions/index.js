@@ -582,6 +582,7 @@ async function hubSyncDeal(db, appId, id, prop, force = false) {
     const payload = hubPayload(id, prop, APP_URL.value().replace(/\/$/, '')), key = payloadKey(payload);
     const stateRef = db.doc(`artifacts/${appId}/server/hubsync-${id}`), last = (await stateRef.get()).data() || {};
     if (!force && last.key === key) return null;              // nothing the hub shows has changed
+    if (!last.key && (!prop || isClosed(prop))) return null;  // never sent: closed, cancelled or removed deals get no hub task
     const body = JSON.stringify(payload);
     const r = await fetch(HUB_URL.value().replace(/\/$/, '') + '/api/dispo-ops', { method: 'POST', headers: { 'Content-Type': 'application/json', ...sign(secret, body) }, body });
     if (!r.ok) { await stateRef.set({ error: 'hub answered ' + r.status, at: Date.now() }, { merge: true }); throw new Error('hub answered ' + r.status); }

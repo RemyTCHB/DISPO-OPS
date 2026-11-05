@@ -47,8 +47,8 @@ function sign(secret, body, ts = Math.floor(Date.now() / 1000)) {
 }
 
 // ---------------------------------------------------------------- the one-way sync into the hub (switched off)
-// One hub task per deal ("DISPO - <address>" in Carlos's list, overall %); one hub subtask per phase (its %, the
-// next DISPO OPS step and its owner). Closed = Done in the hub, Cancelled = the hub's Cancelled status.
+// One hub task per deal ("DISPO OPS - <address>" in Carlos's list, ring = overall %); one hub subtask per phase (its %,
+// the group being worked on and that group's next task, owned by that task's owner). Closed = Done in the hub, Cancelled = the hub's Cancelled status.
 function phaseStats(prop) {
   const out = [];
   for (const t of prop.tasks || []) {
@@ -56,7 +56,7 @@ function phaseStats(prop) {
     const isSOW = t.isSOW && t.subtasks && t.subtasks.length > 0, fully = isSOW ? t.subtasks.every(s => s.completed) : isTaskDone(t);
     p.weight += t.weight;
     p.done += isSOW ? (t.subtasks.filter(s => s.completed).length / t.subtasks.length) * t.weight : fully ? t.weight : 0;
-    if (!fully && !p.next) { const sub = (t.subtasks || []).find(s => !s.completed); p.next = { title: sub ? sub.title : t.title, task: t.title, owner: t.assignee || 'Unassigned' }; }
+    if (!fully && !p.next) p.next = { group: t.mainTask || '', title: t.title, owner: t.assignee || 'Unassigned' };   // the group being worked on and its next task
     if (t.completed || (t.subtasks || []).some(s => s.completed || s.status === 'progress')) p.started = true;
   }
   return out.map(p => ({ phase: p.phase, percent: p.weight > 0 ? Math.min(100, Math.round((p.done / p.weight) * 100)) : (p.next ? 0 : 100), complete: !p.next, started: p.started, next: p.next }));

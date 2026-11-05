@@ -46,7 +46,8 @@ test('hub payload: overall %, one entry per phase with its % and next step, no c
   const p = F.hubPayload('prop_1', { ...deal(), comments: [{ text: 'private' }] }, 'https://dispo-ops.totalchb.com');
   assert.equal(p.deal.percent, 65); assert.equal(p.deal.status, 'open'); assert.equal(p.deal.url, 'https://dispo-ops.totalchb.com/?deal=prop_1');
   assert.deepEqual(p.phases.map(x => [x.phase, x.percent, x.complete]), [['Phase I: X', 80, false], ['Phase II: Y', 50, false]]);
-  assert.deepEqual(p.phases[0].next, { title: 'S1', task: 'B', owner: 'Sarah' });
+  assert.deepEqual(p.phases[0].next, { group: 'G', title: 'B', owner: 'Sarah' });   // the group and its next task (not the subtask)
+  assert.deepEqual(p.phases[1].next, { group: 'H', title: 'C', owner: 'Moe' });
   assert.ok(!JSON.stringify(p).includes('private'));
   assert.deepEqual(F.hubPayload('prop_9', null, 'x'), { deal: { id: 'prop_9', removed: true } });
   assert.equal(F.hubPayload('prop_1', deal({ status: 'cancelled' }), 'x').deal.status, 'cancelled');
