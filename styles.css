@@ -817,3 +817,15 @@ body.tabs-stuck .tabs-line { background: color-mix(in srgb, var(--surface-card) 
   .sub-tools .owner.sm { padding: 2px; } .sub-tools .owner.sm .nm { display: none; }
   .sub-tools { gap: 4px; } .sub-tools .mini { min-width: 32px; padding: 0 4px; }
 }
+
+/* SOP editor: drag handles and default subtask rows */
+.grip { cursor: grab; touch-action: none; color: var(--text-muted); flex: none; }
+.grip:active { cursor: grabbing; }
+body.is-dragging, body.is-dragging * { user-select: none; cursor: grabbing !important; }
+.dragging { opacity: 0.45; }
+.dz-before { box-shadow: 0 -3px 0 0 var(--tchb-indigo-500); }
+.dz-after { box-shadow: 0 3px 0 0 var(--tchb-indigo-500); }
+.sop-subs { display: flex; flex-direction: column; gap: 6px; padding-left: 4px; }
+.sop-sub { display: flex; align-items: center; gap: 6px; border-radius: 8px; }
+.sop-sub .input { padding: 6px 10px; font-size: 14px; }
+.sop-group > .row .grip { margin-left: -6px; }

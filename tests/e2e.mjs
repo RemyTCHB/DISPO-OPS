@@ -141,20 +141,28 @@ async function main() {
     await carlos.fill('#confirmWord', 'Confirm'); await carlos.click('[data-act="removeSub"]');
     assert(await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks.length === 1), 'subtask not removed');
   });
-  await step('draft (saves on leaving the box) and link, both in Details', async () => {
-    const c = () => card('Create FB Post Draft');
-    assert(!(await c().locator('[data-box^="draft:"], [data-box^="link:"]').count()), 'Draft and Link live in Details now, not on the card');
-    await details(carlos, c(), 'notes');
-    await carlos.fill('#draft_own', 'E2E draft text'); await carlos.click('#noteText');
-    const t = await until(async () => { const x = (await getDeal(W)).tasks.find(t => t.id === 'ws_23'); return x.templateText === 'E2E draft text' ? x : null; });
-    assert(t && t.templateLastEditedBy === 'carlos', 'draft author should be stored as before, got ' + (t && t.templateLastEditedBy));
+  await step('no Link or Draft buttons anywhere; drafts and links saved before stay listed in Details and can be removed', async () => {
+    assert(!(await carlos.locator('[data-box^="draft:"], [data-box^="link:"], #draft_own, .own-box').count()), 'Link and Draft are gone from cards and Details');
+    await card('Format The Data').locator('[data-box^="add:"]').click();
+    assert(!(await card('Format The Data').locator('.inline-box input[type="checkbox"]').count()), 'Add Subtask has no Link / Draft checkboxes');
+    await card('Format The Data').locator('[data-act="box"][data-box^="add:"]').first().click();
+    await carlos.click('.deal-head [data-act="pop"][data-pop="notes"]'); await settle(carlos);
+    const dr = carlos.locator('.menu .pop-item', { hasText: 'Made up draft text' });
+    assert(await dr.locator('[data-act="copy"]').count() === 1, 'an old draft keeps its Copy button');
+    await dr.locator('[data-act="clearDraft"]').click(); await carlos.click('[data-act="confirmOk"]');
+    assert(await until(async () => (await getDeal(W)).tasks[0].templateText === ''), 'draft not removed');
+    await carlos.click('.deal-head [data-act="pop"][data-pop="files"]'); await settle(carlos);
+    const lk = carlos.locator('.menu .pop-item', { hasText: 'example.com/uw' });
+    assert(await lk.locator('a[href="https://example.com/uw"]').count() === 1, 'an old link still opens');
+    await lk.locator('[data-act="clearLink"]').click();
+    assert(await until(async () => (await getDeal(W)).tasks[0].hyperlink === ''), 'link not removed');
     await carlos.keyboard.press('Escape'); await settle(carlos);
-    const l = () => card('Format The Data');
-    await details(carlos, l(), 'files');
-    await carlos.fill('#link_ws_12', 'example.com/e2e'); await carlos.press('#link_ws_12', 'Enter');
-    assert(await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').hyperlink === 'example.com/e2e'), 'link not saved');
-    assert(await until(async () => (await carlos.locator('.own-box a[href="https://example.com/e2e"]').count()) === 1), 'saved link should open from Details');
-    await carlos.keyboard.press('Escape'); await settle(carlos);
+    // more drafts and links "saved before" (written straight to the emulator), used by the notes and chat steps below
+    const ref = (await db().collection(`${P}/properties`).where('address', '==', W).get()).docs[0].ref, x = (await ref.get()).data();
+    Object.assign(x.tasks.find(t => t.id === 'ws_23'), { templateText: 'E2E draft text', templateLastEditedBy: 'carlos', templateLastEditedAt: Date.now() });
+    x.tasks.find(t => t.id === 'ws_12').hyperlink = 'example.com/e2e';
+    await ref.update({ tasks: x.tasks });
+    assert(await until(async () => (await carlos.locator('.deal-head [data-pop="notes"]').innerText()).includes('Notes')), 'page did not follow');
   });
   await step('Inject Custom Task (borrowing weight) and delete it', async () => {
     await carlos.click('[data-act="openInject"]');
@@ -169,9 +177,12 @@ async function main() {
     await carlos.click('[data-menu="deductTask"]'); await menuPick(carlos, 'Execute Calls & Marketing');
     await carlos.fill('[data-change="deductWeight"]', '3'); await carlos.press('[data-change="deductWeight"]', 'Tab');
     await carlos.waitForSelector('.meter.ok');
+    await carlos.check('[data-change="injCheck"][data-k="splitWeight"]');
     await carlos.click('[data-act="inject"]:not([data-another])');
     const d = await until(async () => { const x = await getDeal(W); return x.tasks.some(t => t.title === 'E2E Custom Task') ? x : null; });
     assert(d && d.tasks.find(t => t.id === 'ws_28').weight === 7, 'weight not borrowed');
+    assert(d.tasks.find(t => t.title === 'E2E Custom Task').isSOW === true, 'Split weight should mark the task like a SOW task');
+    assert(await card('E2E Custom Task').locator('.chip.tag:has-text("Split Weight")').count() === 1, 'Split Weight tag missing');
     await card('E2E Custom Task').locator('[data-act="openDeleteCustom"]').click(); await carlos.click('[data-act="confirmOk"]');
     const e = await until(async () => { const x = await getDeal(W); return !x.tasks.some(t => t.title === 'E2E Custom Task') ? x : null; });
     assert(e && e.tasks.find(t => t.id === 'ws_28').weight === 10, 'weight not returned');
@@ -298,14 +309,31 @@ async function main() {
     const w = carlos.locator('[data-k="weight"]').first(); await w.fill('25'); await w.press('Tab');
     await carlos.waitForSelector('.meter.bad'); assert(await carlos.locator('[data-act="sopSave"]').isDisabled(), 'Save should be blocked');
     const w2 = carlos.locator('[data-k="weight"]').nth(1); await w2.fill('5'); await w2.press('Tab');
-    await carlos.waitForSelector('.meter.ok'); await carlos.click('[data-act="sopSave"]'); await carlos.click('[data-act="confirmOk"]');
-    const s = await until(async () => (await db().doc(`${P}/settings/sop`).get()).data());
+    await carlos.waitForSelector('.meter.ok');
+    // drag a group above another, add a task and drag it to the top of its group, add default subtasks and reorder them
+    const dragTo = async (grip, target, after = false) => { await carlos.click('.center-note'); await settle(carlos); await target.scrollIntoViewIfNeeded(); const g = await grip.boundingBox(), t = await target.boundingBox();
+      await carlos.mouse.move(g.x + g.width / 2, g.y + g.height / 2); await carlos.mouse.down();
+      await carlos.mouse.move(t.x + t.width / 2, t.y + t.height * (after ? 0.85 : 0.15), { steps: 10 }); await carlos.mouse.up(); await settle(carlos); };
+    await dragTo(carlos.locator('.sop-group[data-dv="Documentation"] > .row [data-grip]'), carlos.locator('.sop-group[data-dv="Seller Negotiation"]'));
+    await carlos.click('[data-act="sopAdd"][data-what="task"][data-group="Documentation"]');
+    const nt = carlos.locator('.sop-task[data-dv="1"] [data-k="title"]'); await nt.fill('E2E Second Task'); await nt.press('Tab');
+    await dragTo(carlos.locator('.sop-task[data-dv="1"] > [data-grip]'), carlos.locator('.sop-task[data-dv="0"]'));
+    for (const [k, v] of ['A', 'B', 'C'].entries()) { await carlos.click('[data-act="sopSubAdd"][data-i="2"]'); const f = carlos.locator(`[data-change="sopSub"][data-i="2"][data-si="${k}"]`); await f.fill(v); await f.press('Tab'); }
+    await dragTo(carlos.locator('.sop-sub[data-dz="sub:2"][data-dv="2"] [data-grip]'), carlos.locator('.sop-sub[data-dz="sub:2"][data-dv="0"]'));
+    await carlos.check('[data-change="sopSplit"][data-i="2"]');
+    await carlos.click('[data-act="sopSave"]'); await carlos.click('[data-act="confirmOk"]');
+    const s = await until(async () => { const x = (await db().doc(`${P}/settings/sop`).get()).data(); return x && x.strategies ? x : null; });
     await carlos.click('.seg.tabs [data-tab="dashboard"]'); await settle(carlos);
-    assert(s && s.strategies.find(x => x.name === 'Creative').tasks[0].weight === 25, 'SOP not saved');
+    const cr = s && s.strategies.find(x => x.name === 'Creative').tasks;
+    assert(cr && cr.find(t => t.title.startsWith('Finalize')).weight === 25, 'SOP not saved');
+    assert(cr.slice(0, 3).map(t => t.title).join(' | ') === 'E2E Second Task | Draft Creative Purchase Agreement | Finalize SubTo/Seller Finance Terms', 'order not saved: ' + cr.slice(0, 3).map(t => t.title).join(' | '));
+    const fin = cr[2]; assert(fin.defaultSubtasks.join() === 'C,A,B' && fin.splitWeight === true, 'subtasks or split not saved: ' + JSON.stringify(fin));
     await carlos.click('[data-act="openDeploy"] >> nth=0'); await carlos.fill('#deployAddress', '800 Sop Way');
     await carlos.click('[data-menu="deployStrategy"]'); await menuPick(carlos, 'Creative'); await carlos.click('[data-act="deploy"]');
     const d = await until(() => getDeal('800 Sop Way'));
-    assert(d && d.tasks[0].weight === 25, 'new deal should use the saved SOP');
+    const f2 = d && d.tasks.find(t => t.title.startsWith('Finalize'));
+    assert(f2 && f2.weight === 25 && d.tasks[0].title === 'E2E Second Task', 'new deal should use the saved SOP');
+    assert(f2.isSOW === true && f2.subtasks.map(x => x.title).join() === 'C,A,B', 'split task should carry its subtasks with the weight split');
   });
   const remy = await open(browser, 'systems@totalchb.com');
   await step('Team: Refresh From Hub (manager), signed request, names shown', async () => {

@@ -28,6 +28,7 @@ let queued = false, syncSt = { state: 'ready' };
 export function render() { if (!queued) { queued = true; requestAnimationFrame(draw); } }
 function draw() {
   queued = false;
+  if (drag) { dragRedraw = true; return; }   // no redraw while an SOP row is being dragged; it happens on release
   S.syncSt = syncSt; S.lastSaved = store.lastSaved();
   patch($('header'), `<div data-key="h-${syncSt.state}">${header(syncSt)}</div>`);
   if (!S.user) { $('main').innerHTML = gateHtml(); $('bottomNav').hidden = true; $('chatFab').hidden = true; $('chat').hidden = true; return; }
@@ -232,7 +233,7 @@ function askStatus(v) {
     open: ['Reopen This Deal?', 'The deal goes back to Open, can be edited again and sends alerts as before.', 'Reopen'] }[v];
   confirmBox(text[0], text[1], text[2], () => change('setStatus', [v]).then(r => r && toast(v === 'open' ? 'Deal reopened' : 'Deal marked ' + L.STATUS[v])), v !== 'open');
 }
-function newInjectState() { return { phase: '', categoryMode: '', category: '', newCategoryName: '', insertGroupAfter: '', title: '', assignee: '', weight: '', requireLink: false, requireDraft: false, deductions: [] }; }
+function newInjectState() { return { phase: '', categoryMode: '', category: '', newCategoryName: '', insertGroupAfter: '', title: '', assignee: '', weight: '', requireLink: false, requireDraft: false, splitWeight: false, deductions: [] }; }
 
 // ---------------------------------------------------------------- actions
 const A = {
@@ -277,12 +278,14 @@ const A = {
     change('setSubStatus', [tg, v]).then(() => { if (v === 'done' && L.isTaskDone(L.findTask(deal(S.activeId), tg))) { S.sections[L.sectionKeyOf(t.phase, t.mainTask)] = L.groupStats(deal(S.activeId).tasks.filter(x => x.phase === t.phase && x.mainTask === t.mainTask)).allCompleted ? 'closed' : S.sections[L.sectionKeyOf(t.phase, t.mainTask)]; render(); } }); },
   editPath: el => change('editOption', [tgOf(el)]),
   addSubtask: el => { const tg = tgOf(el), key = tg.tid, title = ($('newsub_' + key).value || '').trim(); if (!title) return $('newsub_' + key).focus();
-    change('addSubtask', [tg, { title, link: $('newsubLink_' + key).checked, draft: $('newsubDraft_' + key).checked }]); S.boxes['add:' + key] = false; },
+    change('addSubtask', [tg, { title, link: false, draft: false }]); S.boxes['add:' + key] = false; },   // links and drafts now go in Details (Notes, Files)
   saveSubtask: el => { const tg = tgOf(el), key = `${tg.tid}_${tg.sid}`, title = ($('subedit_' + key).value || '').trim(); if (!title) return;
-    change('editSubtask', [tg, { title, link: $('subeditLink_' + key).checked, draft: $('subeditDraft_' + key).checked }]); S.boxes['edit:' + key] = false; },
+    const was = (((deal(S.activeId) || {}).tasks || [])[tg.ti] || {}).subtasks || [], cur = was.find(z => z.id === tg.sid) || {};   // keep an old link or draft as it is
+    change('editSubtask', [tg, { title, link: !!(cur.requiresLink || cur.hyperlink), draft: !!(cur.requiresDraft || cur.templateText) }]); S.boxes['edit:' + key] = false; },
   openRemoveSub: el => { S.modal = { kind: 'removeSub', tg: tgOf(el), ok: false }; render(); setTimeout(() => $('confirmWord') && $('confirmWord').focus(), 30); },
   removeSub: () => { const tg = S.modal.tg; S.modal = null; S.boxes[`edit:${tg.tid}_${tg.sid}`] = false; change('removeSubtask', [tg]); },
   saveLink: el => { const tg = tgOf(el), key = tg.sid ? `${tg.tid}_${tg.sid}` : tg.tid; change('saveLink', [tg, $('link_' + key).value]); S.boxes['link:' + key] = false; $('link_' + key).blur(); render(); },
+  clearDraft: el => { const tg = tgOf(el); confirmBox('Remove This Draft?', 'The text is removed from this item. This cannot be undone.', 'Remove', () => change('saveTemplate', [tg, ''])); },
   clearLink: el => { const tg = tgOf(el), key = tg.sid ? `${tg.tid}_${tg.sid}` : tg.tid; change('clearLink', [tg]); S.boxes['link:' + key] = false; render(); },
   copy: (el) => { const t = el.dataset.text || ''; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(() => { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }); toast('Copied'); },
   openDeleteCustom: el => { const tg = tgOf(el); confirmBox('Confirm Removal', 'Permanently delete this custom task? Its borrowed weight goes back to the tasks it came from.', 'Delete Task', () => change('deleteCustomTask', [tg])); },
@@ -318,7 +321,7 @@ const A = {
     m.busy = false;
     if (!r) return render();
     if (another) { const mt = st.categoryMode === 'existing' ? st.category : st.newCategoryName.trim();
-      Object.assign(st, { title: '', weight: 0, deductions: [], requireLink: false, requireDraft: false }); if (st.categoryMode === 'new') Object.assign(st, { categoryMode: 'existing', category: mt, newCategoryName: '' });
+      Object.assign(st, { title: '', weight: 0, deductions: [], requireLink: false, requireDraft: false, splitWeight: false }); if (st.categoryMode === 'new') Object.assign(st, { categoryMode: 'existing', category: mt, newCategoryName: '' });
       toast('Success', 'Task injected successfully! You can now add another.'); }
     else S.modal = null;
     render();
@@ -389,7 +392,9 @@ const A = {
     else if (what === 'group') { const last = list.map(t => t.phase).lastIndexOf(el.dataset.phase); list.splice(last + 1, 0, { id: nid, phase: el.dataset.phase, mainTask: 'New Group', title: 'New Task', weight: 0, defaultAssignee: 'Carlos' }); }
     else { const last = list.map(t => t.phase + '\u0000' + t.mainTask).lastIndexOf(el.dataset.phase + '\u0000' + el.dataset.group); list.splice(last + 1, 0, { id: nid, phase: el.dataset.phase, mainTask: el.dataset.group, title: '', weight: 0, defaultAssignee: 'Carlos' }); }
     render(); },
-  sopMove: el => { const list = S.sopEdit.data[S.sopEdit.strategy], i = +el.dataset.i, j = i + +el.dataset.n; if (j < 0 || j >= list.length) return; const t = list[i]; if (list[j].phase !== t.phase || list[j].mainTask !== t.mainTask) return; [list[i], list[j]] = [list[j], list[i]]; render(); },
+  sopSubAdd: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i]; t.defaultSubtasks = [...(t.defaultSubtasks || []), '']; render();
+    requestAnimationFrame(() => { const ins = document.querySelectorAll(`[data-change="sopSub"][data-i="${el.dataset.i}"]`); if (ins.length) ins[ins.length - 1].focus(); }); },
+  sopSubRemove: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i]; t.defaultSubtasks.splice(+el.dataset.si, 1); if (!t.defaultSubtasks.length) delete t.defaultSubtasks; render(); },
   sopRemove: el => { const list = S.sopEdit.data[S.sopEdit.strategy], i = +el.dataset.i; confirmBox('Remove This Task From The SOP?', `"${list[i].title || 'Untitled'}" will not be added to new deals. Existing deals keep it.`, 'Remove', () => { list.splice(i, 1); render(); }); },
   sopOptionAdd: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i]; t.dropdownOptions = [...(t.dropdownOptions || []), { title: 'New Path', defaultAssignee: t.defaultAssignee || 'Carlos' }]; render(); },
   sopOptionRemove: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i]; t.dropdownOptions.splice(+el.dataset.oi, 1); if (!t.dropdownOptions.length) delete t.dropdownOptions; render(); },
@@ -403,7 +408,9 @@ function cleanSopTask(t) {
   if (t.dropdownOptions && t.dropdownOptions.length) o.dropdownOptions = t.dropdownOptions.map(x => ({ title: x.title.trim(), defaultAssignee: x.defaultAssignee }));
   else o.defaultAssignee = t.defaultAssignee || 'Unassigned';
   if (t.draftsAndHyperlinks && t.draftsAndHyperlinks.length) o.draftsAndHyperlinks = [...t.draftsAndHyperlinks];
-  if (t.defaultSubtasks && t.defaultSubtasks.length) o.defaultSubtasks = [...t.defaultSubtasks];
+  const subs = (t.defaultSubtasks || []).map(x => String(x || '').trim()).filter(Boolean);
+  if (subs.length) o.defaultSubtasks = subs;
+  if (t.splitWeight) o.splitWeight = true;   // new optional SOP field (approved): deals get the task as isSOW (weight split across subtasks)
   return o;
 }
 
@@ -423,8 +430,8 @@ const CHANGE = {
   sopField: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i], k = el.dataset.k;
     t[k] = k === 'weight' ? (parseFloat(el.value) || 0) : k === 'defaultSubtasks' ? el.value.split('\n').map(s => s.trim()).filter(Boolean) : el.value; render(); },
   sopOption: el => { S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i].dropdownOptions[+el.dataset.oi].title = el.value; },
-  sopFlag: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i], f = el.dataset.flag, cur = new Set(t.draftsAndHyperlinks || []); el.checked ? cur.add(f) : cur.delete(f);
-    t.draftsAndHyperlinks = ['Draft', 'Hyperlink'].filter(x => cur.has(x)); if (!t.draftsAndHyperlinks.length) delete t.draftsAndHyperlinks; },
+  sopSub: el => { S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i].defaultSubtasks[+el.dataset.si] = el.value; },
+  sopSplit: el => { const t = S.sopEdit.data[S.sopEdit.strategy][+el.dataset.i]; if (el.checked) t.splitWeight = true; else delete t.splitWeight; render(); },
   sopRename: el => { const list = S.sopEdit.data[S.sopEdit.strategy], v = el.value.trim(); if (!v) return render();
     list.forEach(t => { if (el.dataset.what === 'phase' && t.phase === el.dataset.old) t.phase = v; if (el.dataset.what === 'group' && t.phase === el.dataset.phase && t.mainTask === el.dataset.old) t.mainTask = v; }); render(); },
   sopRenameStrategy: el => { const ed = S.sopEdit, v = el.value.trim(); if (!v || ed.data[v]) return render();
@@ -437,6 +444,54 @@ const INPUT = {
   chatSearch: el => { S.chat.search = el.value; render(); }
 };
 const ENTER = { saveLink: A.saveLink, deploy: A.deploy, removeDeal: A.removeDeal, chatSend: A.chatSend, addLinkFile: A.addLinkFile };
+
+// ---------------------------------------------------------------- SOP editor: drag to reorder (mouse, touch, pen)
+// Each draggable row carries data-dz (its level and scope: "group:<phase>", "task:<phase>::<group>", "sub:<task index>")
+// and data-dv (which one). A row only moves among rows with the same data-dz.
+let drag = null, dragRedraw = false;
+const clearMarks = () => document.querySelectorAll('.dz-before, .dz-after').forEach(x => x.classList.remove('dz-before', 'dz-after'));
+document.addEventListener('pointerdown', e => {
+  let g = e.target.closest('[data-grip]'); if (!g || !S.sopEdit) return;
+  let row = g.closest('[data-dz]'); if (!row) return;
+  e.preventDefault();
+  // a text box still focused holds back the redraw; finish it now so the row being dragged is the up-to-date one
+  const a = document.activeElement;
+  if (a && a.matches('input, textarea')) {
+    const dz = row.dataset.dz, dv = row.dataset.dv; a.blur(); queued = false; draw();
+    row = [...document.querySelectorAll('[data-dz]')].find(r => r.dataset.dz === dz && r.dataset.dv === dv); if (!row) return;
+    g = row.querySelector('[data-grip]');
+  }
+  try { g.setPointerCapture(e.pointerId); } catch (x) {}
+  drag = { row, dz: row.dataset.dz, from: row.dataset.dv, target: null, after: false }; row.classList.add('dragging'); document.body.classList.add('is-dragging');
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return; e.preventDefault();
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  let t = under && under.closest('[data-dz]'); while (t && t.dataset.dz !== drag.dz) t = t.parentElement && t.parentElement.closest('[data-dz]');
+  clearMarks(); drag.target = null;
+  if (t && t !== drag.row) { const r = t.getBoundingClientRect(); drag.target = t; drag.after = e.clientY > r.top + r.height / 2; t.classList.add(drag.after ? 'dz-after' : 'dz-before'); }
+  if (e.clientY < 70) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+}, { passive: false });
+const endDrag = () => {
+  if (!drag) return; const d = drag; drag = null; clearMarks(); d.row.classList.remove('dragging'); document.body.classList.remove('is-dragging');
+  if (d.target && S.sopEdit) sopReorder(d.dz, d.from, d.target.dataset.dv, d.after);
+  if (d.target || dragRedraw) { dragRedraw = false; render(); }
+};
+document.addEventListener('pointerup', endDrag); document.addEventListener('pointercancel', endDrag);
+function sopReorder(dz, from, to, after) {
+  const list = S.sopEdit.data[S.sopEdit.strategy], [level] = dz.split(':');
+  if (level === 'sub') {   // a default subtask within its task
+    const t = list[+dz.slice(4)], a = t.defaultSubtasks, [x] = a.splice(+from, 1);
+    let j = +to; if (+from < j) j--; a.splice(after ? j + 1 : j, 0, x); return;
+  }
+  if (level === 'task') {  // a task within its group (indexes into the strategy's list)
+    const [x] = list.splice(+from, 1); let j = +to; if (+from < j) j--; list.splice(after ? j + 1 : j, 0, x); return;
+  }
+  const phase = dz.slice(6);   // a whole group (all its tasks) within its phase
+  const block = list.filter(t => t.phase === phase && t.mainTask === from), rest = list.filter(t => !(t.phase === phase && t.mainTask === from));
+  const idx = rest.map((t, i) => t.phase === phase && t.mainTask === to ? i : -1).filter(i => i >= 0); if (!idx.length) return;
+  rest.splice(after ? idx[idx.length - 1] + 1 : idx[0], 0, ...block); list.splice(0, list.length, ...rest);
+}
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;

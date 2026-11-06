@@ -43,13 +43,13 @@ const USER = `
   <li><b>Tick the box</b> on a task to mark it done. The <b>+%</b> pill is how much the task counts toward the deal's progress.</li>
   <li>Click the <b>owner</b> to give the task to someone else. People are grouped by department, as in the Universal Team Hub.</li>
   <li>Some steps ask you to <b>Select Path For This Step</b> first (for example Local or Non-Local Contractor): the path sets the title and the owner. <b>Edit Path</b> lets you choose again.</li>
-  <li><b>Add Subtask</b> adds your own item under a task (optionally asking for a link or a draft). Each subtask is <b>Not Started</b>, <b>In Progress</b> or <b>Done</b>; when every subtask is Done, the task is done. The pencil edits a subtask; <b>Remove</b> asks you to type Confirm.</li>
-  <li><b>Draft</b> (or <b>Template</b>) opens a text box for message drafts; it saves when you click away and shows who saved it last. <b>Add Link</b> stores a link; <b>Link</b> opens it.</li>
+  <li><b>Add Subtask</b> adds your own item under a task. Each subtask is <b>Not Started</b>, <b>In Progress</b> or <b>Done</b>; when every subtask is Done, the task is done. The pencil edits a subtask; <b>Remove</b> asks you to type Confirm.</li>
+  <li>Message drafts and links go in <b>Details</b>: write them as a <b>Note</b>, add links under <b>Files</b>. Drafts and links saved before are still listed there, with <b>Copy</b> and <b>Open</b>, and can be removed.</li>
   <li>The small icons on every task and subtask: <b>Notes</b> (who wrote each and when; on a task, switch on <b>Include Subtask Notes</b> to see its subtasks' notes too), <b>Files &amp; Links</b> (Upload Files, up to 25 MB each, or Add Link), the <b>calendar</b> (due date and time, Eastern, 9:00 AM unless you change it) and <b>Activity</b>.</li>
 </ul>
 
 <h3>Inject Custom Task</h3>
-<p>Adds a task that only this deal needs. Choose the phase, an existing group or a new one (and where it goes), the title, the owner and, if it should count toward progress, a weight. A weight has to be taken from other tasks so the deal still totals 100%: add the tasks to borrow from until the badge says <b>100% Balanced</b>. Deleting a custom task gives its weight back.</p>
+<p>Adds a task that only this deal needs. Choose the phase, an existing group or a new one (and where it goes), the title, the owner and, if it should count toward progress, a weight. A weight has to be taken from other tasks so the deal still totals 100%: add the tasks to borrow from until the badge says <b>100% Balanced</b>. Tick <b>Split this task's weight equally across its subtasks</b> to have each of its subtasks count for an equal share of its weight (as a CSV SOW task does). Deleting a custom task gives its weight back.</p>
 
 <h3>Closing Or Cancelling A Deal</h3>
 <p>Use <b>Status</b> in the deal header: <b>Mark As Closed</b> or <b>Mark As Cancelled</b>. The deal moves to that view on the dashboard, its checklist becomes read-only (chat stays open) and it stops sending alerts. <b>Reopen</b> brings it back to Open.</p>
@@ -85,8 +85,8 @@ const MANAGER = `
 <ol>
   <li>Open <b>SOP Reference</b> (the menu under your photo) and click <b>Edit SOP</b>.</li>
   <li>Pick the strategy. Rename phases and groups in their headers; add a phase, a group or a task with the <b>+</b> buttons.</li>
-  <li>For each task set the title, the default owner, the weight, whether it needs a Draft or a Link, and its default subtasks (one per line). <b>Make It A Path Choice</b> turns a task into a choice of paths, each with its own owner.</li>
-  <li>Use the arrows to reorder tasks inside a group, and the bin to remove a task.</li>
+  <li>For each task set the title, the default owner, the weight and its default subtasks (<b>+ Subtask</b>). Tick <b>Split weight equally across subtasks</b> to have each subtask on a deal (the default ones and any added later) count for an equal share of the task's weight, as a CSV SOW task does. <b>Make It A Path Choice</b> turns a task into a choice of paths, each with its own owner.</li>
+  <li>Drag the handles to reorder groups inside a phase, tasks inside a group and subtasks inside a task. The bin removes a task.</li>
   <li>The badge shows the strategy's total. <b>Save SOP</b> stays off until every strategy totals exactly 100%.</li>
 </ol>
 <p>Saving changes the SOP for deals deployed from then on. Deals already in the pipeline keep their own tasks. <b>+ Strategy</b> adds a new exit strategy; it then appears when deploying and in the filters.</p>

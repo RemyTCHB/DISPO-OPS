@@ -16,8 +16,8 @@ Names, photos, roles and departments come from the Universal Team Hub. Open **Te
 
 1. Open **SOP Reference** (the menu under your photo) and click **Edit SOP**.
 2. Pick the strategy. Rename phases and groups in their headers; add a phase, a group or a task with the **+** buttons.
-3. For each task set the title, the default owner, the weight, whether it needs a Draft or a Link, and its default subtasks (one per line). **Make It A Path Choice** turns a task into a choice of paths, each with its own owner.
-4. Use the arrows to reorder tasks inside a group, and the bin to remove a task.
+3. For each task set the title, the default owner, the weight and its default subtasks (**+ Subtask**). Tick **Split weight equally across subtasks** to have each subtask on a deal (the default ones and any added later) count for an equal share of the task's weight, as a CSV SOW task does. **Make It A Path Choice** turns a task into a choice of paths, each with its own owner.
+4. Drag the handles to reorder groups inside a phase, tasks inside a group and subtasks inside a task. The bin removes a task.
 5. The badge shows the strategy's total. **Save SOP** stays off until every strategy totals exactly 100%.
 
 Saving changes the SOP for deals deployed from then on. Deals already in the pipeline keep their own tasks. **+ Strategy** adds a new exit strategy; it then appears when deploying and in the filters.

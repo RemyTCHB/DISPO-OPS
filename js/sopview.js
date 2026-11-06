@@ -6,6 +6,8 @@ import { S, sop, label, face, canEditSop } from './state.js';
 import { sopProblems } from './logic.js';
 import { pageTitle } from './views.js';
 
+// A drag handle (mouse, touch or pen): app.js moves the item within its own level (data-dz) on release.
+const grip = title => `<button type="button" class="mini grip" data-grip title="${title}" aria-label="${title}">${icon('grip', 16)}</button>`;
 const romanOf = p => { const m = /Phase\s+([IVXL]+)\b/.exec(p || ''); return m ? m[1] : '-'; };
 const groupBy = tasks => { const out = new Map(); tasks.forEach((t, i) => { if (!out.has(t.phase)) out.set(t.phase, new Map()); const g = out.get(t.phase); if (!g.has(t.mainTask)) g.set(t.mainTask, []); g.get(t.mainTask).push({ t, i }); }); return out; };
 
@@ -20,7 +22,7 @@ export function sopPage() {
     const total = [...groups.values()].flat().reduce((s, x) => s + x.t.weight, 0);
     body += `<section class="card sop-phase" data-key="sp-${esc(S.sopStrategy)}-${esc(phase)}"><div class="phase-head"><span class="num">${romanOf(phase)}</span><h2>${esc(phase)}</h2><span class="chip">${Math.round(total * 100) / 100}%</span></div>
       ${[...groups].map(([g, items]) => `<div class="sop-group"><h3>${esc(g || 'Tasks')}</h3>${items.map(({ t }) => `<div class="sop-task"><span class="grow">${esc(t.title)}</span>
-        ${(t.draftsAndHyperlinks || []).map(x => `<span class="chip gray">${x === 'Hyperlink' ? 'Link' : 'Draft'}</span>`).join('')}
+        ${t.splitWeight ? '<span class="chip gray" title="The weight is split equally across its subtasks">Split Weight</span>' : ''}
         ${t.dropdownOptions ? '<span class="chip gray">' + icon('branch', 12) + 'Choose A Path</span>' : `<span class="owner static glass">${face(t.defaultAssignee)}<span class="nm">${esc(label(t.defaultAssignee || 'Unassigned'))}</span></span>`}
         <span class="weight">${t.weight}%</span>
         ${(t.defaultSubtasks || []).map(s => `<div class="sub-l">Subtask: ${esc(s)}</div>`).join('')}
@@ -42,21 +44,23 @@ function sopEditor() {
     const first = [...groups.values()][0][0].i;
     body += `<section class="card sop-phase sop-edit"><div class="phase-head"><span class="num">${romanOf(phase)}</span><input class="input grow" value="${esc(phase)}" data-change="sopRename" data-what="phase" data-old="${esc(phase)}" aria-label="Phase name" style="font-family:var(--font-display);font-weight:800">
       <button type="button" class="btn sm ghost" data-act="sopAdd" data-what="group" data-phase="${esc(phase)}">${icon('plus', 14, 2.5)}Group</button></div>
-      ${[...groups].map(([g, items]) => `<div class="sop-group"><div class="row" style="flex-wrap:nowrap"><input class="input grow" value="${esc(g)}" data-change="sopRename" data-what="group" data-phase="${esc(phase)}" data-old="${esc(g)}" aria-label="Group name" style="font-weight:800">
+      ${[...groups].map(([g, items]) => `<div class="sop-group" data-dz="group:${esc(phase)}" data-dv="${esc(g)}"><div class="row" style="flex-wrap:nowrap">${grip('Drag to reorder this group')}<input class="input grow" value="${esc(g)}" data-change="sopRename" data-what="group" data-phase="${esc(phase)}" data-old="${esc(g)}" aria-label="Group name" style="font-weight:800">
         <button type="button" class="btn sm ghost" data-act="sopAdd" data-what="task" data-phase="${esc(phase)}" data-group="${esc(g)}">${icon('plus', 14, 2.5)}Task</button></div>
-        ${items.map(({ t, i }) => `<div class="sop-task">
+        ${items.map(({ t, i }) => `<div class="sop-task" data-dz="task:${esc(phase)}::${esc(g)}" data-dv="${i}">
+          ${grip('Drag to reorder this task')}
           <div class="stack grow" style="gap:6px;min-width:220px">${inp(t.title, 'title', i, 'aria-label="Task title" placeholder="Task title"')}
-            <textarea class="input" rows="1" data-change="sopField" data-k="defaultSubtasks" data-i="${i}" placeholder="Default subtasks (one per line)" aria-label="Default subtasks" style="min-height:40px">${esc((t.defaultSubtasks || []).join('\n'))}</textarea>
+            ${(t.defaultSubtasks || []).length ? `<div class="sop-subs">${t.defaultSubtasks.map((x, si) => `<div class="sop-sub" data-dz="sub:${i}" data-dv="${si}">${grip('Drag to reorder this subtask')}<input class="input grow" value="${esc(x)}" data-change="sopSub" data-i="${i}" data-si="${si}" aria-label="Default subtask" placeholder="Subtask"><button type="button" class="mini" data-act="sopSubRemove" data-i="${i}" data-si="${si}" title="Remove subtask">${icon('x', 16)}</button></div>`).join('')}</div>` : ''}
             ${t.dropdownOptions ? `<div class="stack" style="gap:6px"><small class="muted">Paths (people choose one on the deal):</small>${t.dropdownOptions.map((o, oi) => `<div class="row" style="flex-wrap:nowrap"><input class="input grow" value="${esc(o.title)}" data-change="sopOption" data-i="${i}" data-oi="${oi}" aria-label="Path"><button type="button" class="owner glass" data-act="menu" data-menu="sopOwner" data-i="${i}" data-oi="${oi}">${face(o.defaultAssignee)}<span class="nm">${esc(label(o.defaultAssignee || 'Unassigned'))}</span></button><button type="button" class="mini" data-act="sopOptionRemove" data-i="${i}" data-oi="${oi}" title="Remove path">${icon('x', 16)}</button></div>`).join('')}</div>` : ''}
-            <div class="row"><label class="check-row"><input type="checkbox" data-change="sopFlag" data-flag="Draft" data-i="${i}" ${(t.draftsAndHyperlinks || []).includes('Draft') ? 'checked' : ''}>Draft</label><label class="check-row"><input type="checkbox" data-change="sopFlag" data-flag="Hyperlink" data-i="${i}" ${(t.draftsAndHyperlinks || []).includes('Hyperlink') ? 'checked' : ''}>Link</label>
+            <div class="row"><button type="button" class="btn sm ghost" data-act="sopSubAdd" data-i="${i}">${icon('plus', 14, 2.5)}Subtask</button>
+              <label class="check-row" title="Each subtask on the deal (default ones and any added later) counts for an equal share of this task's weight, like a CSV SOW task"><input type="checkbox" data-change="sopSplit" data-i="${i}" ${t.splitWeight ? 'checked' : ''}>Split weight equally across subtasks</label>
               <button type="button" class="btn sm ghost" data-act="sopOptionAdd" data-i="${i}">${icon('branch', 14)}${t.dropdownOptions ? 'Add Path' : 'Make It A Path Choice'}</button></div></div>
           ${t.dropdownOptions ? '' : `<button type="button" class="owner glass" data-act="menu" data-menu="sopOwner" data-i="${i}">${face(t.defaultAssignee)}<span class="nm">${esc(label(t.defaultAssignee || 'Unassigned'))}</span>${icon('down', 14, 2.5)}</button>`}
           <input class="input w" type="number" min="0" step="1" value="${esc(t.weight)}" data-change="sopField" data-k="weight" data-i="${i}" aria-label="Weight %">
-          <span class="row" style="gap:0"><button type="button" class="mini" data-act="sopMove" data-i="${i}" data-n="-1" title="Move up">${icon('up', 16)}</button><button type="button" class="mini" data-act="sopMove" data-i="${i}" data-n="1" title="Move down">${icon('down', 16)}</button><button type="button" class="mini" data-act="sopRemove" data-i="${i}" title="Remove task">${icon('trash', 16)}</button></span></div>`).join('')}</div>`).join('')}</section>`;
+          <button type="button" class="mini" data-act="sopRemove" data-i="${i}" title="Remove task">${icon('trash', 16)}</button></div>`).join('')}</div>`).join('')}</section>`;
     void first;
   }
   return `${pageTitle('Edit', 'SOP', 'sope-title')}
-    <p class="center-note" data-key="sope-note">Changes apply to deals deployed after you save. Deals already in the pipeline keep their own tasks.</p>
+    <p class="center-note" data-key="sope-note">Changes apply to deals deployed after you save. Deals already in the pipeline keep their own tasks. Drag the handles to reorder groups, tasks and subtasks.</p>
     <section class="card sticky-bar glass" data-key="sope-bar"><div class="seg" role="group">${names.map(n => `<button type="button" data-act="sopEditStrategy" data-v="${esc(n)}" aria-pressed="${n === cur}">${esc(n)}</button>`).join('')}</div>
       <button type="button" class="btn sm ghost" data-act="sopAddStrategy">${icon('plus', 14, 2.5)}Strategy</button>
       <span class="meter ${total === 100 ? 'ok' : 'bad'}">${esc(cur)}: ${total}%</span><span class="grow"></span>

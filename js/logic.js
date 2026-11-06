@@ -156,7 +156,8 @@ export function generateTaskInstances(sop, strategy, csvContent, now = Date.now(
       weight: task.weight, assignee: task.defaultAssignee || 'Unassigned', completed: false,
       subtasks, templateText: '', templateLastEditedBy: null, templateLastEditedAt: null,
       isDropdown: task.dropdownOptions ? true : false, dropdownOptions: task.dropdownOptions || null, selectedOption: null,
-      requiresDraft, requiresLink
+      requiresDraft, requiresLink,
+      ...(task.splitWeight ? { isSOW: true } : {})   // the SOP says: split the weight equally across its subtasks (as a CSV SOW task does)
     };
   });
   if (strategy === 'Fix & Flip' && csvContent) {
@@ -313,7 +314,8 @@ export const edit = {
     updates.forEach(u => { u.task.weight = parseFloat((u.task.weight - u.amount).toFixed(2)); });
     const task = { id: 'custom_' + x.now + rnd(5), phase: state.phase, mainTask, title, weight, assignee: state.assignee,
       completed: false, subtasks: [], templateText: '', hyperlink: '', requiresDraft: !!state.requireDraft, requiresLink: !!state.requireLink,
-      isCustom: true, borrowedWeight: weight, deductionsHistory: JSON.parse(JSON.stringify(state.deductions || [])) };
+      isCustom: true, borrowedWeight: weight, deductionsHistory: JSON.parse(JSON.stringify(state.deductions || [])),
+      ...(state.splitWeight ? { isSOW: true } : {}) };   // weight split equally across its subtasks, like a CSV SOW task
     let at = d.tasks.length;
     if (state.categoryMode === 'existing') {
       for (let i = d.tasks.length - 1; i >= 0; i--) if (d.tasks[i].phase === state.phase && d.tasks[i].mainTask === mainTask) { at = i + 1; break; }

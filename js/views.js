@@ -185,8 +185,6 @@ function phases(d) {
   return out;
 }
 
-export function draftLabel(it) { return String(it.title || '').toLowerCase().includes('approved') ? 'Template' : 'Draft'; }
-export const wantsDraft = it => String(it.title || '').toLowerCase().includes('draft') || it.requiresDraft;
 // The Details button: one clipboard (notes + files count, the due date's colour) instead of four separate buttons.
 const ICON_DETAILS = '<svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg>';
 function detailsBtn(it, tg, done, sub) {
@@ -208,7 +206,7 @@ function taskCard(d, t, ti, locked) {
   const open = S.boxes['col:' + key] === undefined ? subs.length > 0 : !S.boxes['col:' + key];
   const tags = [
     t.isCustom ? '<span class="chip tag person">Custom Task</span>' : '',
-    t.isSOW ? '<span class="chip tag upload">CSV Upload SOW</span>' : '',
+    t.isSOW ? (subs.some(x => String(x.id).startsWith('sub_sow_')) ? '<span class="chip tag upload">CSV Upload SOW</span>' : '<span class="chip tag upload" title="The task\'s weight is split equally across its subtasks">Split Weight</span>') : '',
     t.isDropdown && !lockedSelect ? `<span class="chip tag deploy">${icon('branch', 12)}Path Chosen</span>` : '',
     dueTag(t, done, tg),
     t.isDropdown && !lockedSelect ? `<button type="button" class="mini labelled" data-act="editPath" ${tg} ${locked ? 'disabled' : ''}>${icon('pen', 14)}Edit Path</button>` : ''
@@ -216,8 +214,7 @@ function taskCard(d, t, ti, locked) {
   const pct = subPct(t), meta = lastChange(d, t.id);
   const path = lockedSelect ? `<div class="path-pick"><span>${icon('branch', 13)} Select Path For This Step</span><button type="button" class="pick" data-act="menu" data-menu="path" ${tg} ${locked ? 'disabled' : ''}><span>-- Make A Selection --</span>${icon('down', 14, 2.5)}</button></div>` : '';
   const addSub = S.boxes['add:' + key] ? `<div class="inline-box" data-key="add"><textarea class="input" id="newsub_${key}" placeholder="Describe subtask..." style="min-height:52px"></textarea>
-      <div class="row"><span class="row"><label class="check-row"><input type="checkbox" id="newsubLink_${key}">Add Link</label><label class="check-row"><input type="checkbox" id="newsubDraft_${key}">Add Draft</label></span>
-      <span class="row"><button type="button" class="btn sm ghost" data-act="box" data-box="add:${key}">Cancel</button><button type="button" class="btn sm secondary" data-act="addSubtask" ${tg}>Save</button></span></div></div>`
+      <div class="row"><span class="grow"></span><span class="row"><button type="button" class="btn sm ghost" data-act="box" data-box="add:${key}">Cancel</button><button type="button" class="btn sm secondary" data-act="addSubtask" ${tg}>Save</button></span></div></div>`
     : `<button type="button" class="add-sub-btn" data-act="box" data-box="add:${key}" ${locked ? 'disabled' : ''}>${icon('plus', 15, 2.5)}Add Subtask</button>`;
   const expand = `<button type="button" class="mini xp ${open ? 'on' : ''}" data-act="expand" data-k="${esc(key)}" title="${open ? 'Hide' : 'Show'} subtasks" aria-expanded="${open}">${icon('down', 20, 2)}</button>`;
   return `<article class="task ${done ? 'done' : ''}" id="task_${esc(t.id)}" data-key="t-${esc(t.id)}-${ti}">
@@ -248,8 +245,7 @@ function subRow(d, t, ti, s, si, locked) {
   const meta = lastChange(d, t.id, s.id);
   const editing = S.boxes['edit:' + key];
   const editBox = editing ? `<div class="inline-box"><textarea class="input" id="subedit_${key}" style="min-height:52px">${esc(s.title)}</textarea>
-      <div class="row"><span class="row"><label class="check-row"><input type="checkbox" id="subeditLink_${key}" ${s.requiresLink || s.hyperlink ? 'checked' : ''}>Require Link</label><label class="check-row"><input type="checkbox" id="subeditDraft_${key}" ${s.requiresDraft || s.templateText ? 'checked' : ''}>Require Draft</label></span>
-      <span class="row"><button type="button" class="btn sm ghost" data-act="box" data-box="edit:${key}">Cancel</button><button type="button" class="btn sm secondary" data-act="saveSubtask" ${tg}>Save</button></span></div></div>` : '';
+      <div class="row"><span class="grow"></span><span class="row"><button type="button" class="btn sm ghost" data-act="box" data-box="edit:${key}">Cancel</button><button type="button" class="btn sm secondary" data-act="saveSubtask" ${tg}>Save</button></span></div></div>` : '';
   return `<div class="sub ${s.completed ? 'done' : ''}" data-key="s-${esc(s.id)}-${si}">
     <div class="sub-row">
       <button type="button" class="check ${s.completed ? 'on' : ''}" data-act="subStatus" data-v="${s.completed ? 'todo' : 'done'}" ${tg} aria-pressed="${!!s.completed}" ${locked ? 'disabled' : ''} title="Mark subtask done">${s.completed ? icon('check', 13, 3.5) : ''}</button>
