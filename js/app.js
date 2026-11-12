@@ -187,7 +187,9 @@ function openMenu(el) {
   if (kind === 'user' || kind === 'active' || kind === 'notifs' || kind === 'sync') { S.menu = { kind, anchor, anchorSel: `.header [data-menu="${kind}"]`, rect: anchor.getBoundingClientRect() }; if (kind === 'notifs') S.selectedNotifs.clear(); return render(); }
   if (MENUS[kind]) return choose(anchor, MENUS[kind](), PICK[kind]);
   const d = deal(S.activeId);
-  if (kind === 'owner') { const tg = tgOf(el); return choose(anchor, ownerOptions(L.findTask(d, tg).assignee), v => change('changeAssignee', [tg, v])); }
+  if (kind === 'owner') { const tg = tgOf(el), t = L.findTask(d, tg);
+    if (tg.sid) { const s = (t.subtasks || []).find(z => z.id === tg.sid) || {}; return choose(anchor, ownerOptions(s.assignee || t.assignee), v => change('changeSubAssignee', [tg, v])); }
+    return choose(anchor, ownerOptions(t.assignee), v => change('changeAssignee', [tg, v])); }
   if (kind === 'path') { const tg = tgOf(el), t = L.findTask(d, tg);
     return choose(anchor, [{ label: '-- Make A Selection --', value: '' }, ...t.dropdownOptions.map((o, i) => ({ label: o.title, hint: 'Assign to: ' + label(o.defaultAssignee || 'Unassigned'), value: String(i) }))], v => change('selectOption', [tg, v === '' ? '' : +v])); }
   // Inject Custom Task

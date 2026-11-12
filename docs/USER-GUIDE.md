@@ -37,7 +37,7 @@ The checklist is grouped by phase, then by group (for example Underwriting). A g
 - **Tick the box** on a task to mark it done. The **+%** pill is how much the task counts toward the deal's progress.
 - Click the **owner** to give the task to someone else. People are grouped by department, as in the Universal Team Hub.
 - Some steps ask you to **Select Path For This Step** first (for example Local or Non-Local Contractor): the path sets the title and the owner. **Edit Path** lets you choose again.
-- **Add Subtask** adds your own item under a task. Each subtask is **Not Started**, **In Progress** or **Done**; when every subtask is Done, the task is done. The pencil edits a subtask; **Remove** asks you to type Confirm.
+- **Add Subtask** adds your own item under a task. A subtask's owner starts as the task's owner; pick another person from its owner menu and alerts for that subtask go to them. Each subtask is **Not Started**, **In Progress** or **Done**; when every subtask is Done, the task is done. The pencil edits a subtask; **Remove** asks you to type Confirm.
 - Message drafts and links go in **Details**: write them as a **Note**, add links under **Files**. Drafts and links saved before are still listed there, with **Copy** and **Open**, and can be removed.
 - The small icons on every task and subtask: **Notes** (who wrote each and when; on a task, switch on **Include Subtask Notes** to see its subtasks' notes too), **Files & Links** (Upload Files, up to 25 MB each, or Add Link), the **calendar** (due date and time, Eastern, 9:00 AM unless you change it) and **Activity**.
 

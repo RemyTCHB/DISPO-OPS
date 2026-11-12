@@ -15,7 +15,7 @@ function overdueItems(prop, now) {
   if (isClosed(prop)) return out;
   for (const t of prop.tasks || []) {
     if (t.due && t.due <= now && !isTaskDone(t)) out.push({ key: t.id, due: t.due, title: t.title, owner: t.assignee, task: null });
-    for (const s of t.subtasks || []) if (s.due && s.due <= now && !s.completed) out.push({ key: t.id + '/' + s.id, due: s.due, title: s.title, owner: t.assignee, task: t.title });
+    for (const s of t.subtasks || []) if (s.due && s.due <= now && !s.completed) out.push({ key: t.id + '/' + s.id, due: s.due, title: s.title, owner: s.assignee || t.assignee, task: t.title });   // a subtask's own owner, else its task's
   }
   return out;
 }

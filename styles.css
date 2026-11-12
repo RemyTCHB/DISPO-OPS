@@ -814,7 +814,7 @@ body.tabs-stuck .tabs-line { background: color-mix(in srgb, var(--surface-card) 
   :root .lg-full, :root[data-theme='dark'] .logo-dark.lg-full { display: none !important; }
   .tk-prog .pbar { flex: 1 1 150px; } .tk-prog .pbar .progress { flex-basis: 80px; }
   .tk-prog .tk-ring-m + .pbar { min-width: 0; }
-  .sub-tools .owner.sm { padding: 2px; } .sub-tools .owner.sm .nm { display: none; }
+  .sub-tools .owner.sm { padding: 2px 6px 2px 2px; gap: 2px; } .sub-tools .owner.sm .nm { display: none; }
   .sub-tools { gap: 4px; } .sub-tools .mini { min-width: 32px; padding: 0 4px; }
 }
 
@@ -829,3 +829,8 @@ body.is-dragging, body.is-dragging * { user-select: none; cursor: grabbing !impo
 .sop-sub { display: flex; align-items: center; gap: 6px; border-radius: 8px; }
 .sop-sub .input { padding: 6px 10px; font-size: 14px; }
 .sop-group > .row .grip { margin-left: -6px; }
+/* small phones: a subtask's tools (owner, status, details, edit, remove) stay on one line */
+@media (max-width: 400px) {
+  .sub-tools { gap: 2px; } .sub-tools .mini { min-width: 30px; padding: 0 2px; }
+  .sub-tools .status-pill { padding-left: 8px; padding-right: 6px; letter-spacing: 0.03em; }
+}

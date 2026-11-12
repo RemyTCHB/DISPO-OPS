@@ -20,6 +20,8 @@ test('overdue items: open tasks and subtasks past due, owned by the task owner; 
   assert.deepEqual(items.map(i => [i.key, i.owner]), [['b', 'Sarah'], ['b/s1', 'Sarah']]);
   assert.deepEqual(F.overdueItems(deal(), 700).map(i => i.key), ['b/s1']);
   assert.deepEqual(F.overdueItems(deal({ status: 'closed' }), 2000), []);
+  const own = deal(); own.tasks[1].subtasks[0].assignee = 'Moe';
+  assert.deepEqual(F.overdueItems(own, 2000).map(i => [i.key, i.owner]), [['b', 'Sarah'], ['b/s1', 'Moe']]);   // a subtask's own owner gets its alert
 });
 
 test('overdue cadence: once when due, then on the interval, again from scratch when the date moves', () => {

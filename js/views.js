@@ -160,7 +160,7 @@ function dealHead(d) {
 function phases(d) {
   const locked = L.isLocked(d), structure = new Map();
   d.tasks.forEach((t, i) => {
-    if (S.agentFilter !== 'All' && !L.sameAgent(t.assignee, S.agentFilter)) return;
+    if (S.agentFilter !== 'All' && !L.sameAgent(t.assignee, S.agentFilter) && !(t.subtasks || []).some(z => z.assignee && L.sameAgent(z.assignee, S.agentFilter))) return;   // the task's owner, or one of its subtasks' own owners
     if (!structure.has(t.phase)) structure.set(t.phase, new Map());
     const g = structure.get(t.phase); if (!g.has(t.mainTask)) g.set(t.mainTask, []);
     g.get(t.mainTask).push({ t, i });
@@ -251,7 +251,7 @@ function subRow(d, t, ti, s, si, locked) {
       <button type="button" class="check ${s.completed ? 'on' : ''}" data-act="subStatus" data-v="${s.completed ? 'todo' : 'done'}" ${tg} aria-pressed="${!!s.completed}" ${locked ? 'disabled' : ''} title="Mark subtask done">${s.completed ? icon('check', 13, 3.5) : ''}</button>
       <div class="sub-body"><span class="sub-title">${esc(s.title)}</span><span class="sub-meta">${meta ? esc(meta) : ''}${dueTag(s, s.completed, tg)}${sow}</span></div>
       <div class="sub-tools">
-        <span class="owner static glass sm" title="Subtasks belong to their task's owner">${face(t.assignee)}<span class="nm">${esc(label(t.assignee))}</span></span>
+        <button type="button" class="owner glass sm" data-act="menu" data-menu="owner" ${tg} ${locked ? 'disabled' : ''} title="Owner${s.assignee ? '' : ' (the task\'s owner until changed)'}">${face(s.assignee || t.assignee)}<span class="nm">${esc(label(s.assignee || t.assignee))}</span>${icon('down', 13, 2.5)}</button>
         <button type="button" class="status-pill s-${st}" data-act="menu" data-menu="subStatus" ${tg} ${locked ? 'disabled' : ''} title="Subtask status">${STAT_LABEL[st]}${icon('down', 13, 2.5)}</button>
         ${detailsBtn(s, tg, s.completed, true)}
         <button type="button" class="mini" data-act="box" data-box="edit:${key}" ${locked ? 'disabled' : ''} title="Edit Item">${icon('pen', 14)}</button>

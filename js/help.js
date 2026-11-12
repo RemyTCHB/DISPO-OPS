@@ -43,7 +43,7 @@ const USER = `
   <li><b>Tick the box</b> on a task to mark it done. The <b>+%</b> pill is how much the task counts toward the deal's progress.</li>
   <li>Click the <b>owner</b> to give the task to someone else. People are grouped by department, as in the Universal Team Hub.</li>
   <li>Some steps ask you to <b>Select Path For This Step</b> first (for example Local or Non-Local Contractor): the path sets the title and the owner. <b>Edit Path</b> lets you choose again.</li>
-  <li><b>Add Subtask</b> adds your own item under a task. Each subtask is <b>Not Started</b>, <b>In Progress</b> or <b>Done</b>; when every subtask is Done, the task is done. The pencil edits a subtask; <b>Remove</b> asks you to type Confirm.</li>
+  <li><b>Add Subtask</b> adds your own item under a task. A subtask's owner starts as the task's owner; pick another person from its owner menu and alerts for that subtask go to them. Each subtask is <b>Not Started</b>, <b>In Progress</b> or <b>Done</b>; when every subtask is Done, the task is done. The pencil edits a subtask; <b>Remove</b> asks you to type Confirm.</li>
   <li>Message drafts and links go in <b>Details</b>: write them as a <b>Note</b>, add links under <b>Files</b>. Drafts and links saved before are still listed there, with <b>Copy</b> and <b>Open</b>, and can be removed.</li>
   <li>The small icons on every task and subtask: <b>Notes</b> (who wrote each and when; on a task, switch on <b>Include Subtask Notes</b> to see its subtasks' notes too), <b>Files &amp; Links</b> (Upload Files, up to 25 MB each, or Add Link), the <b>calendar</b> (due date and time, Eastern, 9:00 AM unless you change it) and <b>Activity</b>.</li>
 </ul>

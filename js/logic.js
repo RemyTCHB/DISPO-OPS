@@ -257,6 +257,11 @@ export const edit = {
     log(d, x, 'subtask added', { tid: t.id, sid: s.id, title });
   },
   // -- subtasks
+  /** A subtask's own owner (optional field `assignee`; without it the subtask follows its task's owner). */
+  changeSubAssignee(d, x, tg, name) {
+    const { t, s } = findSub(d, tg), was = s.assignee || t.assignee; s.assignee = name;
+    log(d, x, 'owner', { tid: t.id, sid: s.id, title: s.title, from: was, to: name });
+  },
   setSubStatus(d, x, tg, status) {
     const { t, s } = findSub(d, tg), was = subStatus(s);
     if (was === status) return false;

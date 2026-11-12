@@ -126,6 +126,9 @@ async function main() {
     await c().locator('[data-box^="add:"]').click();
     await carlos.fill('[id^="newsub_ws_12"]', 'E2E Subtask Two'); await c().locator('[data-act="addSubtask"]').click();
     await until(async () => (await getDeal(W)).tasks.find(t => t.id === 'ws_12').subtasks.length === 2);
+    await c().locator('.sub', { hasText: 'E2E Subtask Two' }).locator('[data-menu="owner"]').click(); await menuPick(carlos, 'Moe Test');
+    assert(await until(async () => { const z = (await getDeal(W)).tasks.find(t => t.id === 'ws_12'); return z.subtasks[1].assignee === 'Moe' && z.assignee !== 'Moe'; }), 'subtask owner not saved on the subtask alone');
+    assert((await c().locator('.sub', { hasText: 'E2E Subtask Two' }).locator('[data-menu="owner"]').innerText()).includes('Moe'), 'subtask owner not shown');
     await status(carlos, c().locator('.sub', { hasText: 'E2E Subtask One' }), 'In Progress');
     let s = await until(async () => { const t = (await getDeal(W)).tasks.find(t => t.id === 'ws_12'); return t.subtasks[0].status === 'progress' ? t : null; });
     assert(s && s.subtasks[0].completed === false && s.subtasks[0].startedAt, 'In Progress not saved');
