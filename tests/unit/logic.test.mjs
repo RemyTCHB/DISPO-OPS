@@ -121,3 +121,11 @@ test('no change ever writes an undefined value (Firestore would refuse the whole
   const bad = []; (function walk(v, p) { if (v === undefined) bad.push(p); else if (v && typeof v === 'object') for (const [k, w] of Object.entries(v)) walk(w, p + '.' + k); })(d, 'deal');
   assert.deepEqual(bad, []);
 });
+
+test('the team copy refreshes when a Manager opens DISPO OPS and it is over an hour old', () => {
+  const now = 10 * 3600e3;
+  assert.equal(L.teamStale(null, now), true, 'never copied');
+  assert.equal(L.teamStale({ people: {} }, now), true, 'no copy time');
+  assert.equal(L.teamStale({ copiedAt: now - 59 * 60e3 }, now), false);
+  assert.equal(L.teamStale({ copiedAt: now - 61 * 60e3 }, now), true);
+});

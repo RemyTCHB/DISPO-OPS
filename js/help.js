@@ -79,7 +79,7 @@ const MANAGER = `
 </ul>
 
 <h3>The Team</h3>
-<p>Names, photos, roles and departments come from the Universal Team Hub. Open <b>Team</b> from your photo and click <b>Refresh From Hub</b> after people change in the hub. Deals keep storing first names (Carlos, Sarah, Remy and so on) because the alerts use them; the screen shows the hub's full names. Manage people in the hub, not here.</p>
+<p>Names, photos, roles and departments come from the Universal Team Hub. The team refreshes on its own when a Manager opens DISPO OPS (at most once an hour). To see a change straight away, open <b>Team</b> from your photo and click <b>Refresh From Hub</b>. Deals keep storing first names (Carlos, Sarah, Remy and so on) because the alerts use them; the screen shows the hub's full names. Manage people in the hub, not here.</p>
 
 <h3>Editing The SOP</h3>
 <ol>

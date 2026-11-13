@@ -529,13 +529,20 @@ function onUser(u, imp = '') {
     const latest = added.sort((a, b) => b.createdAt - a.createdAt)[0];
     if (latest && !latest.read) toast(latest.title, latest.body);
   });
-  store.listenSettings((what, data) => { if (what === 'sop') S.sopDoc = data; else S.directory = data; render(); });
+  store.listenSettings((what, data) => { if (what === 'sop') S.sopDoc = data; else { S.directory = data; autoTeam(); } render(); });
   store.startPresence(list => { S.online = list; render(); });
   store.loadPrefs().catch(() => {});
   store.startMessaging((t, b) => toast(t || 'Notification', b || ''));
   document.body.dataset.appReady = '1';
   document.body.setAttribute('data-app-ready', '');
   render();
+}
+// Like TC Checklist, the team follows the hub on its own: when a Manager opens DISPO OPS and the copy is over an hour
+// old, it is refreshed quietly (once per visit; Refresh From Hub still does it by hand). Not while signed in as someone.
+function autoTeam() {
+  if (S.teamAuto || S.imp || !isManager() || !L.teamStale(S.directory, Date.now())) return;
+  S.teamAuto = true;
+  store.callFunction('refreshDirectory', {}).catch(e => console.warn('Team refresh from the hub failed:', (e && e.message) || e));
 }
 function hideBoot() { const b = $('boot'); if (b) { b.classList.add('gone'); setTimeout(() => b.remove(), 400); } }
 

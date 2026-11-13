@@ -6,6 +6,9 @@
 export const ROOT_MANAGERS = ['brandy@totalchb.com', 'systems@totalchb.com'];
 export const SOP_EDITORS = ['carlos@totalchb.com', 'systems@totalchb.com'];
 export const DEPTS = ['TC', 'DISPO', 'ACQ', 'OPS'];
+// The team copy (settings/directory) refreshes itself from the hub when a Manager opens DISPO OPS and it is older than this.
+export const TEAM_FRESH_MS = 60 * 60 * 1000;
+export const teamStale = (dir, now) => !dir || !dir.copiedAt || now - dir.copiedAt > TEAM_FRESH_MS;
 // Same matching as the Cloud Functions: an owner's stored first name to an email prefix ("Sarah" = sara@, "Remy" = systems@).
 export const normalizeAgent = name => { const v = String(name || '').trim().toLowerCase(); return v === 'sarah' ? 'sara' : v; };
 export const prefixOf = email => { const p = String(email || '').split('@')[0].toLowerCase(); return p === 'systems' ? 'remy' : p; };

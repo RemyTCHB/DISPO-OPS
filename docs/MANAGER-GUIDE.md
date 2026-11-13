@@ -10,7 +10,7 @@ Everything in the User Guide, plus what Managers, Carlos and Systems look after.
 
 ## The Team
 
-Names, photos, roles and departments come from the Universal Team Hub. Open **Team** from your photo and click **Refresh From Hub** after people change in the hub. Deals keep storing first names (Carlos, Sarah, Remy and so on) because the alerts use them; the screen shows the hub's full names. Manage people in the hub, not here.
+Names, photos, roles and departments come from the Universal Team Hub. The team refreshes on its own when a Manager opens DISPO OPS (at most once an hour). To see a change straight away, open **Team** from your photo and click **Refresh From Hub**. Deals keep storing first names (Carlos, Sarah, Remy and so on) because the alerts use them; the screen shows the hub's full names. Manage people in the hub, not here.
 
 ## Editing The SOP
 

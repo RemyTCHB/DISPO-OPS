@@ -94,7 +94,7 @@ and Vercel settings, never in the code.
 ## Connected Apps
 
 - **Universal Team Hub** (hub.totalchb.com). DISPO OPS asks the hub's signed team endpoint for every department when a
-  Manager clicks Refresh From Hub.
+  Manager opens DISPO OPS and the copy is over an hour old (on its own, once per visit), or clicks Refresh From Hub.
 - **Hub deal sync** (one way; the hub is a mirror). Each deal is sent to the hub's `/api/dispo-ops` after every change
   that moves its progress, plus a daily catch-up at 7:15 AM ET. The hub shows it as "DISPO OPS - &lt;address&gt;" in
   Carlos's list (ring = the deal's overall %), one subtask per phase ("&lt;phase&gt; · &lt;%&gt;", then "Working On: &lt;group&gt; ›

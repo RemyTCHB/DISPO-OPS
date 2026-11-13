@@ -338,7 +338,15 @@ async function main() {
     assert(f2 && f2.weight === 25 && d.tasks[0].title === 'E2E Second Task', 'new deal should use the saved SOP');
     assert(f2.isSOW === true && f2.subtasks.map(x => x.title).join() === 'C,A,B', 'split task should carry its subtasks with the weight split');
   });
+  await db().doc(`${P}/settings/directory`).set({ copiedAt: Date.now() - 2 * 3600e3 }, { merge: true });   // the copy is two hours old
   const remy = await open(browser, 'systems@totalchb.com');
+  await step('Team: refreshes itself from the hub when a Manager opens DISPO OPS (copy missing or over an hour old)', async () => {
+    const dir = await until(async () => { const x = (await db().doc(`${P}/settings/directory`).get()).data(); return x && x.people['jess@totalchb.com'] ? x : null; }, 20000);
+    const teamCalls = () => hubCalls.filter(c => c.ok && c.url === '/api/title-agent/team').length;
+    assert(dir && teamCalls() === 1, 'the team should be copied once on its own: ' + teamCalls() + ' team requests');
+    await remy.reload(); await settle(remy); await remy.waitForTimeout(1500);
+    assert(teamCalls() === 1, 'a fresh copy should not be refreshed again on reload');
+  });
   await step('Team: Refresh From Hub (manager), signed request, names shown', async () => {
     await remy.click('[data-menu="user"]'); await remy.click('[data-act="openTeam"]'); await remy.click('[data-act="refreshTeam"]');
     const dir = await until(async () => { const x = (await db().doc(`${P}/settings/directory`).get()).data(); return x && x.people['jess@totalchb.com'] ? x : null; }, 20000);
