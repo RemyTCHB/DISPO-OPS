@@ -598,7 +598,7 @@ table.deals tbody tr:last-child td { border-bottom: none; }
   .group-body { padding: 8px; }
   .two { grid-template-columns: 1fr; }
   .modal { padding: 18px; }
-  .menu, .menu.pop, .menu.dp-menu { left: 8px !important; right: 8px !important; top: auto !important; bottom: 8px !important; width: auto;
+  .menu, .menu.pop, .menu.dp-menu { left: 8px !important; right: 8px !important; top: auto !important; bottom: 8px !important; width: auto !important;
     max-width: none; min-width: 0; max-height: 75vh; }
   .chat { left: 8px; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom)); top: 8px; width: auto; height: auto; }
   .chat-fab { display: none; }
@@ -834,3 +834,5 @@ body.is-dragging, body.is-dragging * { user-select: none; cursor: grabbing !impo
   .sub-tools { gap: 2px; } .sub-tools .mini { min-width: 30px; padding: 0 2px; }
   .sub-tools .status-pill { padding-left: 8px; padding-right: 6px; letter-spacing: 0.03em; }
 }
+
+.menu.pop.notifs-menu { width: 420px; }   /* phones: the bottom sheet spans the screen (width: auto !important above) */

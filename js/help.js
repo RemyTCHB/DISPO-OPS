@@ -15,7 +15,7 @@ const USER = `
   <li><b>Light / Dark</b> switches the look; your choice is remembered on that device.</li>
   <li><b>Active</b> shows who is online now, on phone or desktop.</li>
   <li>The two tabs: <b>Master Dashboard</b> and <b>Active Deal Tracker</b>. <b>SOP Reference</b> is in the menu under your photo. On a phone the two tabs are in the bar at the bottom, with <b>Chat</b>, and SOP Reference is in the photo menu too.</li>
-  <li>The bell opens your <b>Notifications</b>; your photo opens <b>Notification Settings</b>, <b>Team</b>, <b>Help</b> and <b>Sign Out</b>.</li>
+  <li>The bell opens your <b>Notifications</b>; your photo opens <b>My Settings</b> (Notification Settings), <b>Team Members</b> (Managers), <b>SOP Reference</b>, <b>Help &amp; Guides</b> and <b>Sign Out</b>.</li>
   <li>Under the title, the badge says <b>Live</b> when everything is saved, <b>Saving…</b> while a change is on its way, and <b>Not Saved · Retry</b> if a change could not be saved (click it to try again). The clock is Eastern time.</li>
 </ul>
 
@@ -59,7 +59,7 @@ const USER = `
 
 <h3>Notifications</h3>
 <ul>
-  <li>The bell lists your alerts; click one to open the deal (or the chat message). Select several to mark them read or delete them.</li>
+  <li>The bell lists your alerts; click one to open the deal (or the chat message). Select several to mark them read or delete them, or use <b>Clear All</b> to delete every one of your notifications (it asks first and cannot be undone).</li>
   <li><b>Notification Settings</b>: <b>Enable Push On This Device</b> for phone and desktop alerts, choose which alerts you get, and how often <b>Overdue Reminders</b> repeat. Overdue Reminders cover tasks waiting on you and due dates that have passed: you get one when a due date passes, then one on your interval until it is done.</li>
   <li><b>Wipe Devices</b> stops push on devices you no longer use; <b>Defaults</b> restores the standard settings for your role.</li>
 </ul>

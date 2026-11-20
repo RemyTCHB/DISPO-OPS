@@ -362,6 +362,10 @@ const A = {
     const x = n.extraData || {}; if (x.propId && deal(x.propId)) { openTracker(x.propId); if (x.action === 'open_chat') { S.chat.open = true; openChatDeal(x.propId); S.chat.focus = x.commentId || null; render(); } } else render(); },
   notifRead: () => { store.markNotificationsRead([...S.selectedNotifs]); S.selectedNotifs.clear(); render(); },
   notifDelete: el => { const ids = el.dataset.id ? [el.dataset.id] : [...S.selectedNotifs]; store.deleteNotifications(ids); ids.forEach(i => S.selectedNotifs.delete(i)); render(); },
+  notifClearAll: () => { const ids = S.notifs.map(n => n.id); if (!ids.length || S.imp) return;
+    confirmBox('Clear All Notifications?', `This removes all ${ids.length} of your notifications. It cannot be undone.`, 'Clear All', async () => {
+      try { await store.clearNotifications(ids); S.selectedNotifs.clear(); toast('Notifications cleared', `${ids.length} removed.`); }
+      catch (e) { toast('Not Cleared', 'Try again.', true); } }); },
   notifAllRead: () => store.markNotificationsRead(S.notifs.filter(n => !n.read).map(n => n.id)),
   // settings
   openPrefs: async () => { S.menu = null; S.modal = { kind: 'prefs', prefs: null }; render(); try { S.modal.prefs = await store.loadPrefs(); } catch (e) { S.modal = null; toast('Could not load settings', '', true); } render(); },

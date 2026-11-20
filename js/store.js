@@ -5,7 +5,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, connectAuthEmulator, signInWithCredential, signInWithCustomToken }
   from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache, connectFirestoreEmulator, onSnapshot,
-  doc, setDoc, getDoc, updateDoc, deleteDoc, collection, arrayUnion, deleteField, runTransaction, FieldPath }
+  doc, setDoc, getDoc, updateDoc, deleteDoc, collection, arrayUnion, deleteField, runTransaction, FieldPath, writeBatch }
   from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { edit, legacyFix, isLocked, QUIET, WHEN_LOCKED, EditError } from './logic.js';
 
@@ -196,6 +196,11 @@ export function saveSop(strategies) {
 const notifRef = id => doc(db, ...path('users', user.uid, 'notifications', id));
 export const markNotificationsRead = ids => ids.forEach(id => updateDoc(notifRef(id), { read: true }).catch(e => console.warn(e.code)));
 export const deleteNotifications = ids => ids.forEach(id => deleteDoc(notifRef(id)).catch(e => console.warn(e.code)));
+/** Clear All (the bell): every one of your own notifications, in batches. Not while signed in as someone else. */
+export async function clearNotifications(ids) {
+  if (imp) throw new Error('signed in as someone else');
+  for (let i = 0; i < ids.length; i += 400) { const b = writeBatch(db); ids.slice(i, i + 400).forEach(id => b.delete(notifRef(id))); await b.commit(); }
+}
 
 export function defaultPrefs(email) {
   const mail = (email || '').toLowerCase();

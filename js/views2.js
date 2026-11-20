@@ -58,12 +58,12 @@ export function menuHtml() {
 function notifsHtml() {
   const list = S.notifs, sel = S.selectedNotifs, n = sel.size;
   const head = n ? `<div class="pop-head"><input type="checkbox" data-change="notifAll" ${n === list.length ? 'checked' : ''} aria-label="Select all"><b>${n} Selected</b><button type="button" class="mini" data-act="notifRead" title="Mark Read">${icon('check', 17)}</button><button type="button" class="mini" data-act="notifDelete" title="Delete">${icon('trash', 17)}</button></div>`
-    : `<div class="pop-head">${list.length ? '<input type="checkbox" data-change="notifAll" aria-label="Select all">' : ''}<b>Notifications</b>${list.some(x => !x.read) ? `<button type="button" class="mini labelled" data-act="notifAllRead" title="Mark All Read">${icon('check', 16)}All Read</button>` : ''}<button type="button" class="mini" data-act="openPrefs" title="Notification Settings">${icon('gear', 17)}</button></div>`;
+    : `<div class="pop-head">${list.length ? '<input type="checkbox" data-change="notifAll" aria-label="Select all">' : ''}<b>Notifications</b>${list.some(x => !x.read) ? `<button type="button" class="mini labelled" data-act="notifAllRead" title="Mark All Read">${icon('check', 16)}All Read</button>` : ''}${list.length && !S.imp ? `<button type="button" class="mini labelled" data-act="notifClearAll" title="Delete all your notifications">${icon('trash', 15)}Clear All</button>` : ''}<button type="button" class="mini" data-act="openPrefs" title="Notification Settings">${icon('gear', 17)}</button></div>`;
   const items = list.length ? list.map(x => `<div class="notif ${x.read ? '' : 'unread'}"><input type="checkbox" data-change="notifPick" data-id="${esc(x.id)}" ${sel.has(x.id) ? 'checked' : ''} aria-label="Select">
       <div class="body" data-act="notifOpen" data-id="${esc(x.id)}"><b>${esc(x.title)}</b><p>${esc(x.body)}</p><small>${esc(L.timeSince(x.createdAt, now()))} · ${esc(L.whenShort(x.createdAt))}</small></div>
       <button type="button" class="mini" data-act="notifDelete" data-id="${esc(x.id)}" title="Delete">${icon('trash', 15)}</button></div>`).join('')
     : `<div class="pop-empty">You're all caught up!</div>`;
-  return `<div class="menu pop" data-key="menu" role="dialog" aria-label="Notifications" style="width:420px">${head}<div class="pop-list" style="gap:2px">${items}</div></div>`;
+  return `<div class="menu pop notifs-menu" data-key="menu" role="dialog" aria-label="Notifications">${head}<div class="pop-list" style="gap:2px">${items}</div></div>`;
 }
 
 // ---------------------------------------------------------------- popovers

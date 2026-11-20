@@ -11,7 +11,7 @@ Click **Sign In With Google** and use your @totalchb.com account. Other accounts
 - **Light / Dark** switches the look; your choice is remembered on that device.
 - **Active** shows who is online now, on phone or desktop.
 - The two tabs: **Master Dashboard** and **Active Deal Tracker**. **SOP Reference** is in the menu under your photo. On a phone the two tabs are in the bar at the bottom, with **Chat**, and SOP Reference is in the photo menu too.
-- The bell opens your **Notifications**; your photo opens **Notification Settings**, **Team**, **Help** and **Sign Out**.
+- The bell opens your **Notifications**; your photo opens **My Settings** (Notification Settings), **Team Members** (Managers), **SOP Reference**, **Help & Guides** and **Sign Out**.
 - Under the title, the badge says **Live** when everything is saved, **Saving…** while a change is on its way, and **Not Saved · Retry** if a change could not be saved (click it to try again). The clock is Eastern time.
 
 ## Master Dashboard
@@ -55,7 +55,7 @@ The round button (or **Chat** on a phone) opens the discussions. Without a deal 
 
 ## Notifications
 
-- The bell lists your alerts; click one to open the deal (or the chat message). Select several to mark them read or delete them.
+- The bell lists your alerts; click one to open the deal (or the chat message). Select several to mark them read or delete them, or use **Clear All** to delete every one of your notifications (it asks first and cannot be undone).
 - **Notification Settings**: **Enable Push On This Device** for phone and desktop alerts, choose which alerts you get, and how often **Overdue Reminders** repeat. Overdue Reminders cover tasks waiting on you and due dates that have passed: you get one when a due date passes, then one on your interval until it is done.
 - **Wipe Devices** stops push on devices you no longer use; **Defaults** restores the standard settings for your role.
 

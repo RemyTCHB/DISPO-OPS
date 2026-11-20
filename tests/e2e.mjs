@@ -280,6 +280,17 @@ async function main() {
     await moe.waitForSelector('.notif', { timeout: 15000 });
     await moe.locator('.notif .body', { hasText: '700 E2E Way' }).first().click();
     await moe.waitForSelector('#tracker-address:has-text("700 E2E Way")');
+    // Clear All asks first, then removes every one of Moe's notifications (and nobody else's)
+    const mine = async () => { const u = (await admin().auth().getUserByEmail('moe@totalchb.com')).uid; return (await db().collection(`artifacts/${APP_ID}/users/${u}/notifications`).get()).size; };
+    const others = async () => (await db().collectionGroup('notifications').get()).size - await mine();
+    const before = await others(); assert(await mine() > 0, 'Moe should have notifications');
+    await moe.click('[data-menu="notifs"]'); await moe.click('[data-act="notifClearAll"]');
+    await moe.waitForSelector('.modal:has-text("Clear All Notifications?")'); await moe.click('[data-act="confirmOk"]');
+    assert(await until(async () => (await mine()) === 0), 'notifications not cleared');
+    assert(await others() === before, "someone else's notifications were touched");
+    await moe.click('[data-menu="notifs"]');
+    assert(await until(async () => (await moe.locator('#layer:not([hidden]) .menu').innerText()).includes("You're all caught up!")), 'the bell still lists them');
+    await moe.keyboard.press('Escape');
   });
   await step('notification settings save', async () => {
     await moe.click('[data-menu="user"]'); await moe.click('[data-act="openPrefs"]'); await moe.waitForSelector('[data-act="prefToggle"]');
