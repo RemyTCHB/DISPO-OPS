@@ -2,6 +2,7 @@
 functions/
 firebase/
 tests/
+scripts/
 docs/
 firebase.json
 .firebaserc
